@@ -94,3 +94,4 @@ FOR b IN SELECT BranchID FROM Branches LOOP
 END LOOP;
 
 END $$;
+
