@@ -1,11 +1,10 @@
 DO $$
 DECLARE
-    b RECORD;
     p RECORD;
+    b RECORD;
     shoe_size INT;
     product_limit INT;
-    stock INT;
-
+    size_probability REAL;
     colors TEXT[] := ARRAY[
         'Black',
         'White',
@@ -15,19 +14,23 @@ DECLARE
     ];
 BEGIN
 
-FOR b IN
-SELECT BranchID
-FROM Branches
-LOOP
+FOR b IN SELECT BranchID FROM Branches LOOP
 
-    IF b.BranchID <= 5 THEN
-        product_limit := 200;
+    -- Store tiers
+    IF b.BranchID IN (1,2,3,4,5) THEN
+        -- Flagship
+        product_limit := 150;
+        size_probability := 0.85;
 
-    ELSIF b.BranchID <= 12 THEN
-        product_limit := 140;
+    ELSIF b.BranchID IN (6,7,8,9,10,11,12,13,14,15) THEN
+        -- Medium
+        product_limit := 100;
+        size_probability := 0.70;
 
     ELSE
-        product_limit := 85;
+        -- Small
+        product_limit := 75;
+        size_probability := 0.55;
     END IF;
 
     FOR p IN
@@ -41,21 +44,7 @@ LOOP
 
         FOR shoe_size IN 39..45 LOOP
 
-            IF RANDOM() < 0.80 THEN
-
-                stock := CASE
-
-                    WHEN RANDOM() < 0.10 THEN 0
-
-                    WHEN RANDOM() < 0.25 THEN FLOOR(RANDOM()*2)+1
-
-                    WHEN RANDOM() < 0.75 THEN FLOOR(RANDOM()*6)+3
-
-                    WHEN RANDOM() < 0.95 THEN FLOOR(RANDOM()*12)+9
-
-                    ELSE FLOOR(RANDOM()*20)+21
-
-                END;
+            IF RANDOM() < size_probability THEN
 
                 INSERT INTO StoreInventory
                 (
@@ -65,13 +54,35 @@ LOOP
                     ProductColor,
                     Quantity
                 )
+
                 VALUES
                 (
                     b.BranchID,
                     p.ProductID,
                     shoe_size,
-                    colors[(FLOOR(RANDOM()*5)+1)::INT],
-                    stock
+                    colors[(floor(random()*5)+1)::INT],
+
+                    CASE
+
+                        -- Out of stock
+                        WHEN RANDOM() < 0.10 THEN 0
+
+                        -- 1 pair
+                        WHEN RANDOM() < 0.45 THEN 1
+
+                        -- 2 pairs
+                        WHEN RANDOM() < 0.75 THEN 2
+
+                        -- 3 pairs
+                        WHEN RANDOM() < 0.90 THEN 3
+
+                        -- 4 pairs
+                        WHEN RANDOM() < 0.97 THEN 4
+
+                        -- Rarely 5-6 pairs
+                        ELSE floor(random()*2)+5
+
+                    END
                 );
 
             END IF;
@@ -82,5 +93,4 @@ LOOP
 
 END LOOP;
 
-END;
-$$;
+END $$;
