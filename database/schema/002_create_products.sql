@@ -15,5 +15,12 @@ CREATE TABLE Products (
     ProductBreathability VARCHAR(100),
     ProductWeight DECIMAL(10,2),
     ProductWaterproof BOOLEAN DEFAULT FALSE,
-    ProductDescription TEXT
+    ProductDescription TEXT,RecommendedDistance VARCHAR(30),
+    ArchType VARCHAR(30),
+    FootStrike VARCHAR(30),
+    EnergyReturn VARCHAR(20),
+    ReleaseYear INT,
+    HeelDropMM INT,
+    Terrain VARCHAR(30)
+
 );
