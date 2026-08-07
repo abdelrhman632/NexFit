@@ -1,0 +1,20 @@
+CREATE TABLE Products (
+    ProductID SERIAL PRIMARY KEY,
+    ProductName VARCHAR(100) NOT NULL,
+    ProductBrand VARCHAR(100) NOT NULL,
+    ProductModel VARCHAR(100) NOT NULL,
+    ProductSKU VARCHAR(100) UNIQUE NOT NULL,
+    ProductCategory VARCHAR(100) NOT NULL,
+    ProductGender VARCHAR(20),
+    ProductPrice DECIMAL(10,2) NOT NULL,
+    ProductMaterial VARCHAR(100),
+    ProductUsage VARCHAR(100),
+    ProductSurface VARCHAR(100),
+    ProductSupportType VARCHAR(100),
+    ProductCushioning VARCHAR(100),
+    ProductBreathability VARCHAR(100),
+    ProductWeight DECIMAL(10,2),
+    ProductWaterproof BOOLEAN DEFAULT FALSE,
+    ProductDescription TEXT,
+    ProductImageURL TEXT
+);
