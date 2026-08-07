@@ -15,6 +15,5 @@ CREATE TABLE Products (
     ProductBreathability VARCHAR(100),
     ProductWeight DECIMAL(10,2),
     ProductWaterproof BOOLEAN DEFAULT FALSE,
-    ProductDescription TEXT,
-    ProductImageURL TEXT
+    ProductDescription TEXT
 );
