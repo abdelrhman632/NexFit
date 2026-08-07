@@ -1,9 +1,11 @@
-INSERT INTO Branches( 
-    BranchID, BranchName, City, Address, Phone, OpeningHours, IsActive
+INSERT INTO Branches (
+    BranchName,
+    City,
+    Address,
+    Phone,
+    OpeningHours
 )
-
-
-VALUES 
+VALUES
 ('Nasr City Branch', 'Cairo', 'Makram Ebeid St.', '01012345678', '10:00 - 22:00'),
 ('Heliopolis Branch', 'Cairo', 'El Merghany St.', '01012345679', '10:00 - 22:00'),
 ('New Cairo Branch', 'Cairo', 'Cairo Festival City', '01012345680', '10:00 - 22:00'),
