@@ -4,6 +4,7 @@ INSERT INTO Branches (
     Address,
     Phone,
     OpeningHours
+    
 )
 VALUES
 ('Nasr City Branch', 'Cairo', 'Makram Ebeid St.', '01012345678', '10:00 - 22:00'),
