@@ -99,4 +99,4 @@ VALUES
 ('Salomon X Ultra 5','Salomon','X Ultra 5','SL-XU5-001','Hiking','Men',11200,'Synthetic','Hiking','Trail','Stability','Medium','Medium',390,TRUE,'Water-resistant hiking shoe.'),
 
 -- Mizuno
-('Mizuno Wave Rider 28','Mizuno','Wave Rider 28','MZ-WR28-001','Running','Men',8700,'Mesh','Daily Running','Road','Neutral','High','High',280,FALSE,'Reliable neutral running shoe.');
+('Mizuno Wave Rider 28','Mizuno','Wave Rider 28','MZ-WR28-001','Running','Men',8700,'Mesh','Daily Running','Road','Neutral','High','High',280,FALSE,'Reliable neutral running shoe.'); 
