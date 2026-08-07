@@ -1,7 +1,5 @@
-INSERT INTO Products (ProductName, ProductBrand, ProductModel, ProductSKU, ProductCategory, ProductGender, ProductPrice, 
-ProductMaterial, ProductUsage, ProductSurface, ProductSupportType, 
-ProductCushioning, ProductBreathability, ProductWeight, ProductWaterproof, ProductDescription) VALUES
-INSERT INTO Products (ProductName, ProductBrand, ProductModel, ProductSKU, ProductCategory, ProductGender, ProductPrice, ProductMaterial, ProductUsage, ProductSurface, ProductSupportType, ProductCushioning, ProductBreathability, ProductWeight, ProductWaterproof, ProductDescription, RecommendedDistance, ArchType, FootStrike, EnergyReturn, ReleaseYear, HeelDropMM, Terrain) VALUES
+INSERT INTO Products (ProductName, ProductBrand, ProductModel, ProductSKU, ProductCategory, ProductGender, ProductPrice, ProductMaterial, ProductUsage, ProductSurface, ProductSupportType, ProductCushioning, ProductBreathability, ProductWeight, ProductWaterproof, ProductDescription, RecommendedDistance, ArchType, FootStrike, EnergyReturn, ReleaseYear, HeelDropMM, Terrain) 
+VALUES
 ('Nike Pegasus 40','Nike','Pegasus 40','NK-PEG40-101','Running','Men',5500.00,'Mesh','Daily Running','Road','Neutral','Medium','High',288.00,FALSE,'Everyday neutral running shoe.','Any','Medium','Heel','Medium',2024,10,'Road'),
 ('Nike Pegasus 40 Women','Nike','Pegasus 40','NK-PEG40-102','Running','Women',5500.00,'Mesh','Daily Running','Road','Neutral','Medium','High',242.00,FALSE,'Everyday neutral running shoe.','Any','Medium','Heel','Medium',2024,10,'Road'),
 ('Nike ZoomX Vaporfly 3','Nike','Vaporfly 3','NK-VPF3-101','Running','Unisex',12500.00,'Flyknit','Racing','Road','Neutral','High','High',198.00,FALSE,'Elite marathon racing shoe.','Marathon','High','Forefoot','Maximum',2023,8,'Road'),
