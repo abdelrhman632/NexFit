@@ -93,4 +93,24 @@ public class StoreInventoryController : ControllerBase
 
         return Ok(existingInventory);
     }
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteStoreInventory(int id)
+    {
+        var inventory = await _context.StoreInventories
+            .FindAsync(id);
+
+        if (inventory == null)
+        {
+            return NotFound(new
+            {
+                message = $"Store inventory with ID {id} was not found."
+            });
+        }
+
+        _context.StoreInventories.Remove(inventory);
+
+        await _context.SaveChangesAsync();
+
+        return NoContent();
+    }
 }
