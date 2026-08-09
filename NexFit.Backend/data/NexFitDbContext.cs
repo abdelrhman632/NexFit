@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using NexFit.Backend.Models;
-
+using NexFit.Backend.Models.Products;   
 namespace NexFit.Backend.Data;
 
 public class NexFitDbContext : DbContext
@@ -11,6 +11,7 @@ public class NexFitDbContext : DbContext
     }
 
     public DbSet<Branch> Branches { get; set; }
+    public DbSet<Product> Products { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -40,6 +41,84 @@ public class NexFitDbContext : DbContext
 
             entity.Property(b => b.IsActive)
                 .HasColumnName("isactive");
+        });
+         modelBuilder.Entity<Product>(entity =>
+        {
+            entity.ToTable("products");
+
+            entity.HasKey(p => p.ProductID);
+
+            entity.Property(p => p.ProductID)
+                .HasColumnName("productid");
+
+            entity.Property(p => p.ProductName)
+                .HasColumnName("productname");
+
+            entity.Property(p => p.ProductBrand)
+                .HasColumnName("productbrand");
+
+            entity.Property(p => p.ProductModel)
+                .HasColumnName("productmodel");
+
+            entity.Property(p => p.ProductSKU)
+                .HasColumnName("productsku");
+
+            entity.Property(p => p.ProductCategory)
+                .HasColumnName("productcategory");
+
+            entity.Property(p => p.ProductGender)
+                .HasColumnName("productgender");
+
+            entity.Property(p => p.ProductPrice)
+                .HasColumnName("productprice");
+
+            entity.Property(p => p.ProductMaterial)
+                .HasColumnName("productmaterial");
+
+            entity.Property(p => p.ProductUsage)
+                .HasColumnName("productusage");
+
+            entity.Property(p => p.ProductSurface)
+                .HasColumnName("productsurface");
+
+            entity.Property(p => p.ProductSupportType)
+                .HasColumnName("productsupporttype");
+
+            entity.Property(p => p.ProductCushioning)
+                .HasColumnName("productcushioning");
+
+            entity.Property(p => p.ProductBreathability)
+                .HasColumnName("productbreathability");
+
+            entity.Property(p => p.ProductWeight)
+                .HasColumnName("productweight");
+
+            entity.Property(p => p.ProductWaterproof)
+                .HasColumnName("productwaterproof");
+
+            entity.Property(p => p.ProductDescription)
+                .HasColumnName("productdescription");
+
+            entity.Property(p => p.RecommendedDistance)
+                .HasColumnName("recommendeddistance");
+
+            entity.Property(p => p.ArchType)
+                .HasColumnName("archtype");
+
+            entity.Property(p => p.FootStrike)
+                .HasColumnName("footstrike");
+
+            entity.Property(p => p.EnergyReturn)
+                .HasColumnName("energyreturn");
+
+            entity.Property(p => p.ReleaseYear)
+                .HasColumnName("releaseyear");
+
+            entity.Property(p => p.HeelDropMM)
+                .HasColumnName("heeldropmm");
+
+            entity.Property(p => p.Terrain)
+                .HasColumnName("terrain");
         });
     }
 }
