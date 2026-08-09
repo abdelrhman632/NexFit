@@ -40,22 +40,55 @@ public class BranchesController : ControllerBase
 
         return Ok(branch);
     }
-    
-    [HttpPost]  
+
+    [HttpPost]
     public async Task<IActionResult> CreateBranch([FromBody] Branch branch)
     {
         if (branch == null)
         {
-             return BadRequest(new { message = "Branch data is required." });
+            return BadRequest(new { message = "Branch data is required." });
         }
 
-    _context.Branches.Add(branch);
-    await _context.SaveChangesAsync();
+        _context.Branches.Add(branch);
+        await _context.SaveChangesAsync();
 
-    return CreatedAtAction(
-        nameof(GetBranch),
-        new { id = branch.BranchID },
-        branch
-         );
+        return CreatedAtAction(
+            nameof(GetBranch),
+            new { id = branch.BranchID },
+            branch
+             );
+    }
+    
+    [HttpPut("{id}")]
+    public async Task<IActionResult> UpdateBranch(
+     int id,
+     [FromBody] Branch branch)
+    {
+        if (branch == null)
+        {
+            return BadRequest(new { message = "Invalid branch data." });
+        }
+
+        var existingBranch = await _context.Branches
+            .FirstOrDefaultAsync(b => b.BranchID == id);
+
+        if (existingBranch == null)
+        {
+            return NotFound(new
+            {
+                message = $"Branch with ID {id} was not found."
+            });
+        }
+
+        existingBranch.BranchName = branch.BranchName;
+        existingBranch.City = branch.City;
+        existingBranch.Address = branch.Address;
+        existingBranch.Phone = branch.Phone;
+        existingBranch.OpeningHours = branch.OpeningHours;
+        existingBranch.IsActive = branch.IsActive;
+
+        await _context.SaveChangesAsync();
+
+        return Ok(existingBranch);
     }
 }
