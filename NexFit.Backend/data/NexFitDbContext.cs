@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using NexFit.Backend.Models;
-using NexFit.Backend.Models.Products;   
+using NexFit.Backend.Models.Products;  
+using NexFit.Backend.Models.StoreInventory; 
 namespace NexFit.Backend.Data;
 
 public class NexFitDbContext : DbContext
@@ -12,6 +13,7 @@ public class NexFitDbContext : DbContext
 
     public DbSet<Branch> Branches { get; set; }
     public DbSet<Product> Products { get; set; }
+    public DbSet<StoreInventory> StoreInventories { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -119,6 +121,27 @@ public class NexFitDbContext : DbContext
 
             entity.Property(p => p.Terrain)
                 .HasColumnName("terrain");
+        });
+        modelBuilder.Entity<StoreInventory>(entity =>
+        {
+            entity.ToTable("storeinventory");
+
+            entity.HasKey(si => si.InventoryID);
+
+            entity.Property(si => si.InventoryID)
+                .HasColumnName("inventoryid");
+
+            entity.Property(si => si.BranchID)
+                .HasColumnName("branchid");
+
+            entity.Property(si => si.ProductID)
+                .HasColumnName("productid");
+
+            entity.Property(si => si.Quantity)
+                .HasColumnName("quantity");
+
+            entity.Property(si => si.LastUpdated)
+                .HasColumnName("lastupdated");
         });
     }
 }
