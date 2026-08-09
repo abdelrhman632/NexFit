@@ -46,6 +46,16 @@ public class ProductsController : ControllerBase
         {
             return BadRequest(new { message = "Product data is required." });
         }
+        var skuExists = await _context.Products
+    .AnyAsync(p => p.ProductSKU == product.ProductSKU);
+
+        if (skuExists)
+        {
+            return BadRequest(new
+            {
+                message = $"Product SKU '{product.ProductSKU}' already exists."
+            });
+        }
 
         _context.Products.Add(product);
         await _context.SaveChangesAsync();
@@ -66,6 +76,18 @@ public class ProductsController : ControllerBase
             return BadRequest(new
             {
                 message = "Invalid product data."
+            });
+        }
+        var skuExists = await _context.Products
+    .AnyAsync(p =>
+        p.ProductSKU == product.ProductSKU &&
+        p.ProductID != id);
+
+        if (skuExists)
+        {
+            return BadRequest(new
+            {
+                message = $"Product SKU '{product.ProductSKU}' already exists."
             });
         }
 
