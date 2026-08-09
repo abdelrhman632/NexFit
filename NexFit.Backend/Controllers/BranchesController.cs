@@ -3,7 +3,6 @@ using Microsoft.EntityFrameworkCore;
 using NexFit.Backend.Data;
 using NexFit.Backend.Models;
 namespace NexFit.Backend.Controllers;
-
 [ApiController]
 [Route("api/[controller]")]
 public class BranchesController : ControllerBase
@@ -110,5 +109,25 @@ public class BranchesController : ControllerBase
         await _context.SaveChangesAsync();
 
         return NoContent();
+    }
+    [HttpGet("{id}/Inventory")]
+    public async Task<IActionResult> GetBranchInventory(int id)
+    {
+        var branch = await _context.Branches
+            .FirstOrDefaultAsync(b => b.BranchID == id);
+
+        if (branch == null)
+        {
+            return NotFound(new
+            {
+                message = $"Branch with ID {id} was not found."
+            });
+        }
+
+        var inventory = await _context.StoreInventories
+            .Where(i => i.BranchID == id)
+            .ToListAsync();
+
+        return Ok(inventory);
     }
 }
