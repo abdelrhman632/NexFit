@@ -58,7 +58,7 @@ public class BranchesController : ControllerBase
             branch
              );
     }
-    
+
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateBranch(
      int id,
@@ -90,5 +90,25 @@ public class BranchesController : ControllerBase
         await _context.SaveChangesAsync();
 
         return Ok(existingBranch);
+    }
+
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteBranch(int id)
+    {
+        var branch = await _context.Branches
+            .FirstOrDefaultAsync(b => b.BranchID == id);
+
+        if (branch == null)
+        {
+            return NotFound(new
+            {
+                message = $"Branch with ID {id} was not found."
+            });
+        }
+
+        _context.Branches.Remove(branch);
+        await _context.SaveChangesAsync();
+
+        return NoContent();
     }
 }
