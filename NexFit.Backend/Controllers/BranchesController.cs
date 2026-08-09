@@ -22,4 +22,22 @@ public class BranchesController : ControllerBase
 
         return Ok(branches);
     }
+
+
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetBranch(int id)
+    {
+        var branch = await _context.Branches
+            .FirstOrDefaultAsync(b => b.BranchID == id);
+
+        if (branch == null)
+        {
+            return NotFound(new
+            {
+                message = $"Branch with ID {id} was not found."
+            });
+        }
+
+        return Ok(branch);
+    }
 }
