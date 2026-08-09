@@ -40,4 +40,21 @@ public class StoreInventoryController : ControllerBase
 
         return Ok(inventory);
     }
+    [HttpPost]
+    public async Task<IActionResult> CreateStoreInventory([FromBody] StoreInventory inventory)
+    {
+        if (inventory == null)
+        {
+            return BadRequest(new { message = "Store Inventory data is required." });
+        }
+
+        _context.StoreInventories.Add(inventory);
+        await _context.SaveChangesAsync();
+
+        return CreatedAtAction(
+            nameof(GetStoreInventory),
+            new { id = inventory.InventoryID },
+            inventory
+        );
+    }
 }
