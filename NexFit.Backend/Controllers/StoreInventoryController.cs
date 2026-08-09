@@ -106,12 +106,33 @@ public class StoreInventoryController : ControllerBase
             });
         }
 
+        var branchExists = await _context.Branches
+            .AnyAsync(b => b.BranchID == inventory.BranchID);
+
+        if (!branchExists)
+        {
+            return BadRequest(new
+            {
+                message = $"Branch with ID {inventory.BranchID} does not exist."
+            });
+        }
+
+        var productExists = await _context.Products
+            .AnyAsync(p => p.ProductID == inventory.ProductID);
+
+        if (!productExists)
+        {
+            return BadRequest(new
+            {
+                message = $"Product with ID {inventory.ProductID} does not exist."
+            });
+        }
+
         existingInventory.BranchID = inventory.BranchID;
         existingInventory.ProductID = inventory.ProductID;
         existingInventory.ProductSize = inventory.ProductSize;
         existingInventory.ProductColor = inventory.ProductColor;
         existingInventory.Quantity = inventory.Quantity;
-
         existingInventory.LastUpdated = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
