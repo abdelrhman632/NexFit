@@ -56,4 +56,56 @@ public class ProductsController : ControllerBase
             product
         );
     }
+    [HttpPut("{id}")]
+    public async Task<IActionResult> UpdateProduct(
+    int id,
+    [FromBody] Product product)
+    {
+        if (product == null)
+        {
+            return BadRequest(new
+            {
+                message = "Invalid product data."
+            });
+        }
+
+        var existingProduct = await _context.Products
+            .FirstOrDefaultAsync(p => p.ProductID == id);
+
+        if (existingProduct == null)
+        {
+            return NotFound(new
+            {
+                message = $"Product with ID {id} was not found."
+            });
+        }
+
+        existingProduct.ProductName = product.ProductName;
+        existingProduct.ProductBrand = product.ProductBrand;
+        existingProduct.ProductModel = product.ProductModel;
+        existingProduct.ProductSKU = product.ProductSKU;
+        existingProduct.ProductCategory = product.ProductCategory;
+        existingProduct.ProductGender = product.ProductGender;
+        existingProduct.ProductPrice = product.ProductPrice;
+        existingProduct.ProductMaterial = product.ProductMaterial;
+        existingProduct.ProductUsage = product.ProductUsage;
+        existingProduct.ProductSurface = product.ProductSurface;
+        existingProduct.ProductSupportType = product.ProductSupportType;
+        existingProduct.ProductCushioning = product.ProductCushioning;
+        existingProduct.ProductBreathability = product.ProductBreathability;
+        existingProduct.ProductWeight = product.ProductWeight;
+        existingProduct.ProductWaterproof = product.ProductWaterproof;
+        existingProduct.ProductDescription = product.ProductDescription;
+        existingProduct.RecommendedDistance = product.RecommendedDistance;
+        existingProduct.ArchType = product.ArchType;
+        existingProduct.FootStrike = product.FootStrike;
+        existingProduct.EnergyReturn = product.EnergyReturn;
+        existingProduct.ReleaseYear = product.ReleaseYear;
+        existingProduct.HeelDropMM = product.HeelDropMM;
+        existingProduct.Terrain = product.Terrain;
+
+        await _context.SaveChangesAsync();
+
+        return Ok(existingProduct);
+    }
 }
