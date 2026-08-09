@@ -1,3 +1,0 @@
-﻿<Project>
-  <Import Project="..\build\NexFit.Backend.props" />
-</Project>
