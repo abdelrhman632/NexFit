@@ -144,6 +144,22 @@ public class StoreInventoryController : ControllerBase
             });
         }
 
+        var inventoryExists = await _context.StoreInventories
+            .AnyAsync(i =>
+                i.BranchID == inventory.BranchID &&
+                i.ProductID == inventory.ProductID &&
+                i.ProductSize == inventory.ProductSize &&
+                i.ProductColor == inventory.ProductColor &&
+                i.InventoryID != id);
+
+        if (inventoryExists)
+        {
+            return BadRequest(new
+            {
+                message = "This product already exists in this branch inventory for the selected size and color."
+            });
+        }
+
         existingInventory.BranchID = inventory.BranchID;
         existingInventory.ProductID = inventory.ProductID;
         existingInventory.ProductSize = inventory.ProductSize;
