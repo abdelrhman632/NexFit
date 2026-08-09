@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using NexFit.Backend.Data;
-
+using NexFit.Backend.Models.Products;
 namespace NexFit.Backend.Controllers;
 
 [ApiController]
@@ -22,7 +22,7 @@ public class ProductsController : ControllerBase
 
         return Ok(products);
     }
-    
+
     [HttpGet("{id}")]
     public async Task<IActionResult> GetProduct(int id)
     {
@@ -38,5 +38,22 @@ public class ProductsController : ControllerBase
         }
 
         return Ok(product);
+    }
+    [HttpPost]
+    public async Task<IActionResult> CreateProduct([FromBody] Product product)
+    {
+        if (product == null)
+        {
+            return BadRequest(new { message = "Product data is required." });
+        }
+
+        _context.Products.Add(product);
+        await _context.SaveChangesAsync();
+
+        return CreatedAtAction(
+            nameof(GetProduct),
+            new { id = product.ProductID },
+            product
+        );
     }
 }
