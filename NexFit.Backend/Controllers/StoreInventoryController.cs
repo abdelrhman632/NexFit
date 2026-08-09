@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using NexFit.Backend.Data;
+using NexFit.Backend.Models.StoreInventory;
 
 namespace NexFit.Backend.Controllers;
 
@@ -21,5 +22,22 @@ public class StoreInventoryController : ControllerBase
         var inventories = await _context.StoreInventories.ToListAsync();
 
         return Ok(inventories);
+    }
+    
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetStoreInventory(int id)
+    {
+        var inventory = await _context.StoreInventories
+            .FirstOrDefaultAsync(si => si.InventoryID == id);
+
+        if (inventory == null)
+        {
+            return NotFound(new
+            {
+                message = $"Store Inventory with ID {id} was not found."
+            });
+        }
+
+        return Ok(inventory);
     }
 }
