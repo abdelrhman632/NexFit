@@ -136,6 +136,12 @@ public class NexFitDbContext : DbContext
 
             entity.Property(si => si.ProductID)
                 .HasColumnName("productid");
+            
+            entity.Property(si => si.ProductSize)
+                .HasColumnName("productsize");
+                
+            entity.Property(si => si.ProductColor)
+                .HasColumnName("productcolor");
 
             entity.Property(si => si.Quantity)
                 .HasColumnName("quantity");
