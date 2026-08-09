@@ -7,7 +7,8 @@ public class StoreInventory
     public int BranchID { get; set; }
 
     public int ProductID { get; set; }
-
+    
+[   Range(35, 50, ErrorMessage = "Product size must be between 35 and 50.")]
     public int ProductSize { get; set; }
 
     public string ProductColor { get; set; } = string.Empty;
