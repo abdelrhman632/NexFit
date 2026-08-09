@@ -41,7 +41,8 @@ public class StoreInventoryController : ControllerBase
         return Ok(inventory);
     }
     [HttpPost]
-    public async Task<IActionResult> CreateStoreInventory([FromBody] StoreInventory inventory)
+    public async Task<IActionResult> CreateStoreInventory(
+    [FromBody] StoreInventory inventory)
     {
         if (inventory == null)
         {
@@ -70,6 +71,21 @@ public class StoreInventoryController : ControllerBase
             return BadRequest(new
             {
                 message = $"Product with ID {inventory.ProductID} does not exist."
+            });
+        }
+
+        var inventoryExists = await _context.StoreInventories
+            .AnyAsync(i =>
+                i.BranchID == inventory.BranchID &&
+                i.ProductID == inventory.ProductID &&
+                i.ProductSize == inventory.ProductSize &&
+                i.ProductColor == inventory.ProductColor);
+
+        if (inventoryExists)
+        {
+            return BadRequest(new
+            {
+                message = "This product already exists in this branch inventory for the selected size and color."
             });
         }
 
