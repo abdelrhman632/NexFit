@@ -39,6 +39,22 @@ public class ProductsController : ControllerBase
 
         return Ok(product);
     }
+    [HttpGet("sku/{sku}")]
+    public async Task<IActionResult> GetProductBySKU(string sku)
+    {
+        var product = await _context.Products
+            .FirstOrDefaultAsync(p => p.ProductSKU == sku);
+
+        if (product == null)
+        {
+            return NotFound(new
+            {
+                message = $"Product with SKU {sku} was not found."
+            });
+        }
+
+        return Ok(product);
+    }
     [HttpPost]
     public async Task<IActionResult> CreateProduct([FromBody] Product product)
     {
