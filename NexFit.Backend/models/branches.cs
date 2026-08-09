@@ -1,13 +1,18 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace NexFit.Backend.Models;
 
 public class Branch
 {
     public int BranchID { get; set; }
 
+    [Required]
     public string BranchName { get; set; } = string.Empty;
 
+    [Required]
     public string City { get; set; } = string.Empty;
 
+    [Required]
     public string Address { get; set; } = string.Empty;
 
     public string? Phone { get; set; }
