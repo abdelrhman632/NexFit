@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using NexFit.Backend.Data;
-
+using NexFit.Backend.Models;
 namespace NexFit.Backend.Controllers;
 
 [ApiController]
@@ -39,5 +39,23 @@ public class BranchesController : ControllerBase
         }
 
         return Ok(branch);
+    }
+    
+    [HttpPost]  
+    public async Task<IActionResult> CreateBranch([FromBody] Branch branch)
+    {
+        if (branch == null)
+        {
+             return BadRequest(new { message = "Branch data is required." });
+        }
+
+    _context.Branches.Add(branch);
+    await _context.SaveChangesAsync();
+
+    return CreatedAtAction(
+        nameof(GetBranch),
+        new { id = branch.BranchID },
+        branch
+         );
     }
 }
