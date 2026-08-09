@@ -1,4 +1,5 @@
 namespace NexFit.Backend.Models.Products;
+using System.ComponentModel.DataAnnotations;
 
 public class Product
 {
@@ -10,9 +11,10 @@ public class Product
     public string ProductSKU { get; set; } = string.Empty;
     public string ProductCategory { get; set; } = string.Empty;
     public string ProductGender { get; set; } = string.Empty;
-
+    
+    [Range(0.01, double.MaxValue, ErrorMessage = "Product price must be greater than 0.")]
     public decimal ProductPrice { get; set; }
-
+    
     public string ProductMaterial { get; set; } = string.Empty;
     public string ProductUsage { get; set; } = string.Empty;
     public string ProductSurface { get; set; } = string.Empty;
