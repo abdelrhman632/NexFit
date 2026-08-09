@@ -22,4 +22,21 @@ public class ProductsController : ControllerBase
 
         return Ok(products);
     }
+    
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetProduct(int id)
+    {
+        var product = await _context.Products
+            .FirstOrDefaultAsync(p => p.ProductID == id);
+
+        if (product == null)
+        {
+            return NotFound(new
+            {
+                message = $"Product with ID {id} was not found."
+            });
+        }
+
+        return Ok(product);
+    }
 }
