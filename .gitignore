@@ -89,3 +89,6 @@ Thumbs.db
 **/TestResults/
 **/coverage/
 *.coverage
+
+*.m4a
+*.wav
