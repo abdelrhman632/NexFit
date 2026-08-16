@@ -121,6 +121,7 @@ def main():
         print("-" * 60)
 
         print("Product ID:", product["productid"])
+        print("SKU:", product["sku"])
         print("Name:", product["productname"])
         print("Brand:", product["productbrand"])
         print("Model:", product["productmodel"])

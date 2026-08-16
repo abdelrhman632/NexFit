@@ -15,6 +15,7 @@ class ResultAggregator:
 
                 products[product_id] = {
                     "productid": product_id,
+                    "sku": row["productsku"],
                     "productname": row["productname"],
                     "productbrand": row["productbrand"],
                     "productmodel": row["productmodel"],

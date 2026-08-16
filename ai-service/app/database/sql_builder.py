@@ -54,6 +54,7 @@ class SQLBuilder:
         return f"""
 SELECT
     p.productid,
+    p.productsku,
     p.productname,
     p.productbrand,
     p.productmodel,

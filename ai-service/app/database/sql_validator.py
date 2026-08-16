@@ -5,10 +5,10 @@ from sqlglot import exp
 ALLOWED_TABLES = {
     "products": {
         "productid",
+        "productsku",
         "productname",
         "productbrand",
         "productmodel",
-        "productsku",
         "productcategory",
         "productgender",
         "productprice",
