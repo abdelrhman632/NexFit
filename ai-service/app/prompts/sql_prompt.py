@@ -286,12 +286,54 @@ If the user asks for recommendations, return enough information for NexFit to ex
 Do not invent product names, prices, sizes, branches, or database values.
 
 ============================================================
-OUTPUT
+OUTPUT FORMAT
 ============================================================
 
-Return ONLY JSON.
+You MUST return ONLY valid JSON.
 
-No Markdown.
-No ```json.
-No explanation outside the JSON.
+Do NOT return Markdown.
+Do NOT wrap the response in ```json.
+Do NOT include any text outside the JSON.
+
+The JSON MUST have this exact structure:
+
+{
+  "needs_database": true,
+  "filters": {
+    "gender": ["Men", "Unisex"],
+    "category": "Running",
+    "usage": "Long Distance",
+    "size": 42,
+    "max_price": 7000,
+    "min_price": null,
+    "branch": "Nasr City Branch"
+  },
+  "reason": "Brief explanation of why the database is required."
+}
+
+The "filters" object is REQUIRED whenever "needs_database" is true.
+
+Every filter must represent what the user actually requested.
+
+Use null when the user did not specify a filter.
+
+Do NOT omit the "filters" object.
+
+IMPORTANT:
+
+The "filters" object is the authoritative representation of the user's search requirements.
+
+Do NOT rely on generating SQL.
+
+The SQL field is NOT required.
+
+The application will construct the SQL itself from the validated filters.
+
+If needs_database is false, return:
+
+{
+  "needs_database": false,
+  "filters": null,
+  "reason": "Brief explanation of why database information is not required."
+}
 """
