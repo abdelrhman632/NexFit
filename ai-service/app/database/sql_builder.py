@@ -72,4 +72,5 @@ JOIN branches b
     ON i.branchid = b.branchid
 WHERE {where_clause}
 ORDER BY p.productprice;
+LIMIT 10;
 """.strip()
