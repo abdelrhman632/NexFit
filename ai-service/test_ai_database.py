@@ -6,18 +6,23 @@ from app.services.filter_validator import (
     FilterValidator,
     FilterValidationError,
 )
+from app.services.result_aggregator import ResultAggregator
 from app.database.sql_builder import SQLBuilder
 from app.database.query_executor import QueryExecutor
 
 
 def parse_gemini_json(response_text: str) -> dict:
     """
-    Convert Gemini's JSON response into a Python dictionary.
+    Convert Gemini's response into a Python dictionary.
 
-    Handles accidental Markdown code fences such as:
-    ```json
-    {...}
-    ```
+    Handles both:
+        {...}
+
+    and accidental Markdown fences:
+
+        ```json
+        {...}
+        ```
     """
 
     text = response_text.strip()
@@ -36,7 +41,7 @@ def parse_gemini_json(response_text: str) -> dict:
     return json.loads(text)
 
 
-def print_results(title: str, results: list):
+def print_aggregated_results(title: str, results: list[dict]):
 
     print("=" * 60)
     print(title)
@@ -46,15 +51,34 @@ def print_results(title: str, results: list):
         print("No matching products found.")
         return
 
-    print(f"Found {len(results)} result(s).")
+    print(f"Found {len(results)} unique product(s).")
 
-    for index, row in enumerate(results, start=1):
+    for index, product in enumerate(results, start=1):
 
         print()
-        print(f"RESULT {index}")
+        print(f"PRODUCT {index}")
+        print("-" * 60)
 
-        for key, value in row.items():
-            print(f"{key}: {value}")
+        print("Product ID:", product["productid"])
+        print("Name:", product["productname"])
+        print("Brand:", product["productbrand"])
+        print("Model:", product["productmodel"])
+        print("Price:", product["productprice"])
+        print("Gender:", product["productgender"])
+        print("Category:", product["productcategory"])
+        print("Usage:", product["productusage"])
+        print("Size:", product["productsize"])
+
+        print()
+        print("AVAILABLE BRANCHES:")
+
+        for branch in product["branches"]:
+
+            print(
+                f"  - {branch['branchname']} "
+                f"({branch['city']}) "
+                f"| Quantity: {branch['quantity']}"
+            )
 
 
 def main():
@@ -86,11 +110,14 @@ def main():
     llm = LLMService()
 
     try:
+
         response = llm.generate_sql(user_text)
 
     except Exception as exc:
+
         print("GEMINI ERROR:")
         print(exc)
+
         return
 
     print(response)
@@ -100,20 +127,27 @@ def main():
     # =========================================================
 
     try:
+
         data = parse_gemini_json(response)
 
     except json.JSONDecodeError as exc:
+
         print("=" * 60)
         print("INVALID GEMINI JSON")
         print("=" * 60)
+
         print(exc)
+
         return
 
     # =========================================================
     # STEP 3 — CHECK DATABASE REQUIREMENT
     # =========================================================
 
-    needs_database = data.get("needs_database", False)
+    needs_database = data.get(
+        "needs_database",
+        False,
+    )
 
     if not needs_database:
 
@@ -129,7 +163,7 @@ def main():
 
         return
 
-    # Gemini must provide filters when database access is required.
+    # Gemini MUST provide filters when database is required.
 
     if not data.get("filters"):
 
@@ -170,7 +204,9 @@ def main():
 
     try:
 
-        filters = FilterValidator().validate(filters)
+        filters = FilterValidator().validate(
+            filters
+        )
 
         print("FILTERS VALID")
         print(filters)
@@ -192,12 +228,12 @@ def main():
 
     builder = SQLBuilder()
 
-    sql = builder.build(
+    primary_sql = builder.build(
         filters,
         include_branch=True,
     )
 
-    print(sql)
+    print(primary_sql)
 
     # =========================================================
     # STEP 7 — EXECUTE PRIMARY QUERY
@@ -211,7 +247,9 @@ def main():
 
     try:
 
-        results = executor.execute(sql)
+        primary_results = executor.execute(
+            primary_sql
+        )
 
     except Exception as exc:
 
@@ -221,43 +259,73 @@ def main():
         return
 
     # =========================================================
-    # STEP 8 — PRIMARY RESULTS
+    # STEP 8 — AGGREGATE PRIMARY RESULTS
     # =========================================================
 
-    print_results(
+    aggregator = ResultAggregator()
+
+    primary_products = aggregator.aggregate(
+        primary_results
+    )
+
+    print_aggregated_results(
         "PRIMARY DATABASE RESULTS",
-        results,
+        primary_products,
     )
 
     # =========================================================
-    # STEP 9 — LOCATION FALLBACK
+    # STEP 9 — EXACT MATCH FOUND
     # =========================================================
 
-    if results:
+    if primary_products:
 
         print()
-        print("Exact matches found.")
-        return
+        print("=" * 60)
+        print("FINAL STATUS")
+        print("=" * 60)
 
-    # No exact results.
-
-    if not filters.branch:
-
-        print()
-        print("No branch was requested.")
-        print("No location fallback is required.")
+        print(
+            "Exact product matches found "
+            "at the requested branch."
+        )
 
         return
+
+    # =========================================================
+    # STEP 10 — NO EXACT MATCHES
+    # =========================================================
 
     print()
     print("=" * 60)
     print("NO EXACT MATCHES")
     print("=" * 60)
 
-    print(
-        f"No products matched all requirements at: "
-        f"{filters.branch}"
-    )
+    if filters.branch:
+
+        print(
+            f"No products matched all requirements "
+            f"at: {filters.branch}"
+        )
+
+    else:
+
+        print(
+            "No products matched the requested criteria."
+        )
+
+    # =========================================================
+    # STEP 11 — LOCATION FALLBACK
+    # =========================================================
+
+    if not filters.branch:
+
+        print()
+        print(
+            "No branch was requested, "
+            "so no location fallback is required."
+        )
+
+        return
 
     print()
     print("=" * 60)
@@ -272,7 +340,7 @@ def main():
     print(fallback_sql)
 
     # =========================================================
-    # STEP 10 — EXECUTE FALLBACK QUERY
+    # STEP 12 — EXECUTE FALLBACK QUERY
     # =========================================================
 
     print("=" * 60)
@@ -293,16 +361,20 @@ def main():
         return
 
     # =========================================================
-    # STEP 11 — FALLBACK RESULTS
+    # STEP 13 — AGGREGATE FALLBACK RESULTS
     # =========================================================
 
-    print_results(
+    fallback_products = aggregator.aggregate(
+        fallback_results
+    )
+
+    print_aggregated_results(
         "FALLBACK RESULTS",
-        fallback_results,
+        fallback_products,
     )
 
     # =========================================================
-    # STEP 12 — FINAL STATUS
+    # STEP 14 — FINAL STATUS
     # =========================================================
 
     print()
@@ -310,7 +382,7 @@ def main():
     print("FINAL STATUS")
     print("=" * 60)
 
-    if fallback_results:
+    if fallback_products:
 
         print(
             "Products matching the requested criteria "
