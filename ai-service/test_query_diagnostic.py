@@ -211,7 +211,36 @@ def main():
     ORDER BY i.branchid;
     """
 )
-
+    run(
+        database,
+        "8. FALLBACK WITHOUT LOCATION",
+        """
+        SELECT
+            p.productid,
+            p.productname,
+            p.productbrand,
+            p.productprice,
+            p.productcategory,
+            p.productusage,
+            i.productsize,
+            i.quantity,
+            b.branchname,
+            b.city
+        FROM products p
+        JOIN storeinventory i
+            ON p.productid = i.productid
+        JOIN branches b
+            ON i.branchid = b.branchid
+        WHERE p.productgender IN ('Men', 'Unisex')
+        AND p.productcategory = 'Running'
+        AND p.productusage = 'Long Distance'
+        AND i.productsize = 42
+        AND i.quantity > 0
+        AND p.productprice < 7000
+        AND b.isactive = TRUE
+        ORDER BY p.productprice;
+        """
+    )
 
 if __name__ == "__main__":
     main()
