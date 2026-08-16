@@ -1,3 +1,4 @@
+from itertools import product
 import json
 
 from app.services.llm import LLMService
@@ -122,6 +123,8 @@ def main():
 
         print("Product ID:", product["productid"])
         print("SKU:", product["sku"])
+        print("\nFULL PRODUCT DATA:")
+        print(product)
         print("Name:", product["productname"])
         print("Brand:", product["productbrand"])
         print("Model:", product["productmodel"])
