@@ -1,6 +1,5 @@
 import os
-
-from google import genai
+import requests
 
 from app.prompts.system_prompt import NEXFIT_SYSTEM_PROMPT
 from app.prompts.sql_prompt import NEXFIT_SQL_SYSTEM_PROMPT
@@ -9,23 +8,83 @@ from app.prompts.recommendation_prompt import (
 )
 
 
-MODEL_NAME = "gemini-3.6-flash"
+OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
+
+# Good general-purpose model for the application.
+MODEL_NAME = "openai/gpt-5.5"
 
 
 class LLMService:
 
     def __init__(self):
 
-        api_key = os.getenv("GEMINI_API_KEY")
+        api_key = os.getenv("OPENROUTER_API_KEY")
 
         if not api_key:
             raise RuntimeError(
-                "GEMINI_API_KEY environment variable is not configured."
+                "OPENROUTER_API_KEY environment variable is not configured."
             )
 
-        self.client = genai.Client(
-            api_key=api_key,
+        self.api_key = api_key
+
+    # =========================================================
+    # INTERNAL OPENROUTER REQUEST
+    # =========================================================
+
+    def _generate(
+        self,
+        user_text: str,
+        system_prompt: str,
+        json_mode: bool = False,
+    ) -> str:
+
+        payload = {
+            "model": MODEL_NAME,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": system_prompt,
+                },
+                {
+                    "role": "user",
+                    "content": user_text,
+                },
+            ],
+        }
+
+        if json_mode:
+            payload["response_format"] = {
+                "type": "json_object"
+            }
+
+        response = requests.post(
+            OPENROUTER_URL,
+            headers={
+                "Authorization": f"Bearer {self.api_key}",
+                "Content-Type": "application/json",
+                "HTTP-Referer": "https://nexfit-production-738b.up.railway.app",
+                "X-Title": "NexFit",
+            },
+            json=payload,
+            timeout=120,
         )
+
+        # Give us the actual OpenRouter error instead of
+        # hiding it behind a generic 500.
+        if not response.ok:
+            raise RuntimeError(
+                f"OpenRouter API error "
+                f"{response.status_code}: {response.text}"
+            )
+
+        data = response.json()
+
+        try:
+            return data["choices"][0]["message"]["content"]
+        except (KeyError, IndexError, TypeError) as exc:
+            raise RuntimeError(
+                f"Unexpected OpenRouter response: {data}"
+            ) from exc
 
     # =========================================================
     # GENERAL AI RESPONSE
@@ -33,15 +92,10 @@ class LLMService:
 
     def generate_response(self, user_text: str) -> str:
 
-        response = self.client.models.generate_content(
-            model=MODEL_NAME,
-            contents=user_text,
-            config=genai.types.GenerateContentConfig(
-                system_instruction=NEXFIT_SYSTEM_PROMPT,
-            ),
+        return self._generate(
+            user_text=user_text,
+            system_prompt=NEXFIT_SYSTEM_PROMPT,
         )
-
-        return response.text
 
     # =========================================================
     # SQL GENERATION
@@ -49,15 +103,10 @@ class LLMService:
 
     def generate_sql(self, user_text: str) -> str:
 
-        response = self.client.models.generate_content(
-            model=MODEL_NAME,
-            contents=user_text,
-            config=genai.types.GenerateContentConfig(
-                system_instruction=NEXFIT_SQL_SYSTEM_PROMPT,
-            ),
+        return self._generate(
+            user_text=user_text,
+            system_prompt=NEXFIT_SQL_SYSTEM_PROMPT,
         )
-
-        return response.text
 
     # =========================================================
     # RECOMMENDATION PREFERENCE GENERATION
@@ -68,13 +117,8 @@ class LLMService:
         user_text: str,
     ) -> str:
 
-        response = self.client.models.generate_content(
-            model=MODEL_NAME,
-            contents=user_text,
-            config=genai.types.GenerateContentConfig(
-                system_instruction=RECOMMENDATION_SYSTEM_PROMPT,
-                response_mime_type="application/json",
-            ),
+        return self._generate(
+            user_text=user_text,
+            system_prompt=RECOMMENDATION_SYSTEM_PROMPT,
+            json_mode=True,
         )
-
-        return response.text
