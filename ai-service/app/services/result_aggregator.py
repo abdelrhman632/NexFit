@@ -12,11 +12,9 @@ class ResultAggregator:
 
         for row in rows:
 
-            product_id = row["productid"]
-
-            # =================================================
-            # CREATE PRODUCT
-            # =================================================
+            product_id = row[
+                "productid"
+            ]
 
             if product_id not in products:
 
@@ -50,184 +48,80 @@ class ResultAggregator:
                         row["productusage"],
 
                     "productsize":
-                       row["productsize"],
+                        row["productsize"],
 
-                    # -----------------------------------------
-                    # FULL PRODUCT ATTRIBUTES
-                    # -----------------------------------------
+                    # =============================
+                    # PRODUCT SPECIFICATIONS
+                    # =============================
 
                     "material":
-                        row["productmaterial"],
+                        row.get("material"),
 
                     "surface":
-                        row["productsurface"],
+                        row.get("surface"),
 
                     "supporttype":
-                        row["productsupporttype"],
+                        row.get("supporttype"),
 
                     "cushioning":
-                        row["productcushioning"],
+                        row.get("cushioning"),
 
                     "breathability":
-                        row["productbreathability"],
+                        row.get("breathability"),
 
                     "weight":
-                        row["productweight"],
+                        row.get("weight"),
 
                     "waterproof":
-                        row["productwaterproof"],
+                        row.get("waterproof"),
 
                     "description":
-                        row["productdescription"],
+                        row.get("description"),
 
                     "recommendeddistance":
-                        row["recommendeddistance"],
+                        row.get(
+                            "recommendeddistance"
+                        ),
 
                     "archtype":
-                        row["archtype"],
+                        row.get("archtype"),
 
                     "footstrike":
-                        row["footstrike"],
+                        row.get("footstrike"),
 
                     "energyreturn":
-                        row["energyreturn"],
+                        row.get("energyreturn"),
 
                     "releaseyear":
-                        row["releaseyear"],
+                        row.get("releaseyear"),
 
                     "heeldropmm":
-                        row["heeldropmm"],
+                        row.get("heeldropmm"),
 
                     "terrain":
-                        row["terrain"],
+                        row.get("terrain"),
 
-                    # -----------------------------------------
+                    # =============================
                     # BRANCHES
-                    # -----------------------------------------
+                    # =============================
 
                     "branches": [],
-                    "material": row["productmaterial"],
-                    "surface": row["productsurface"],
-                    "supporttype": row["productsupporttype"],
-                    "cushioning": row["productcushioning"],
-                    "breathability": row["productbreathability"],
-                    "weight": row["productweight"],
-                    "waterproof": row["productwaterproof"],
-                    "description": row["productdescription"],
-                    "recommendeddistance": row["recommendeddistance"],
-                    "archtype": row["archtype"],
-                    "footstrike": row["footstrike"],
-                    "energyreturn": row["energyreturn"],
-                    "releaseyear": row["releaseyear"],
-                    "heeldropmm": row["heeldropmm"],
-                    "terrain": row["terrain"],
                 }
 
-            product = products[product_id]
+            products[
+                product_id
+            ]["branches"].append({
 
-            # =================================================
-            # INVENTORY INFORMATION
-            # =================================================
+                "branchname":
+                    row["branchname"],
 
-            branch_name = row["branchname"]
-            city = row["city"]
-            size = row["productsize"]
-            quantity = row["quantity"]
+                "city":
+                    row["city"],
 
-            # =================================================
-            # FIND EXISTING BRANCH
-            # =================================================
+                "quantity":
+                    row["quantity"],
 
-            existing_branch = None
-
-            for branch in product["branches"]:
-
-                if (
-                    branch["branchname"]
-                    == branch_name
-                    and
-                    branch["city"]
-                    == city
-                ):
-
-                    existing_branch = branch
-                    break
-
-            # =================================================
-            # CREATE BRANCH
-            # =================================================
-
-            if existing_branch is None:
-
-                product["branches"].append({
-
-                    "branchname":
-                        branch_name,
-
-                    "city":
-                        city,
-
-                    "quantity":
-                        quantity,
-
-                    "sizes": [
-                        {
-                            "size": size,
-                            "quantity": quantity,
-                        }
-                    ],
-                })
-
-                continue
-
-            # =================================================
-            # EXISTING BRANCH
-            # =================================================
-
-            existing_size = None
-
-            for size_data in existing_branch["sizes"]:
-
-                if (
-                    size_data["size"]
-                    == size
-                ):
-
-                    existing_size = size_data
-                    break
-
-            # =================================================
-            # ADD NEW SIZE
-            # =================================================
-
-            if existing_size is None:
-
-                existing_branch["sizes"].append({
-
-                    "size":
-                        size,
-
-                    "quantity":
-                        quantity,
-                })
-
-            # =================================================
-            # SAME SIZE
-            # =================================================
-
-            else:
-
-                existing_size["quantity"] += quantity
-
-            # =================================================
-            # UPDATE TOTAL BRANCH QUANTITY
-            # =================================================
-
-            existing_branch["quantity"] = sum(
-                item["quantity"]
-                for item
-                in existing_branch["sizes"]
-            )
+            })
 
         return list(
             products.values()
