@@ -50,79 +50,50 @@ class ResultAggregator:
                     "productsize":
                         row["productsize"],
 
-                    # =============================
-                    # PRODUCT SPECIFICATIONS
-                    # =============================
-
-                    "material":
-                        row.get("material"),
-
-                    "surface":
-                        row.get("surface"),
-
-                    "supporttype":
-                        row.get("supporttype"),
-
-                    "cushioning":
-                        row.get("cushioning"),
-
-                    "breathability":
-                        row.get("breathability"),
-
-                    "weight":
-                        row.get("weight"),
-
-                    "waterproof":
-                        row.get("waterproof"),
-
-                    "description":
-                        row.get("description"),
-
-                    "recommendeddistance":
-                        row.get(
-                            "recommendeddistance"
-                        ),
-
-                    "archtype":
-                        row.get("archtype"),
-
-                    "footstrike":
-                        row.get("footstrike"),
-
-                    "energyreturn":
-                        row.get("energyreturn"),
-
-                    "releaseyear":
-                        row.get("releaseyear"),
-
-                    "heeldropmm":
-                        row.get("heeldropmm"),
-
-                    "terrain":
-                        row.get("terrain"),
-
-                    # =============================
-                    # BRANCHES
-                    # =============================
+                    "material": row.get("material"),
+                    "surface": row.get("surface"),
+                    "supporttype": row.get("supporttype"),
+                    "cushioning": row.get("cushioning"),
+                    "breathability": row.get("breathability"),
+                    "weight": row.get("weight"),
+                    "waterproof": row.get("waterproof"),
+                    "description": row.get("description"),
+                    "recommendeddistance": row.get("recommendeddistance"),
+                    "archtype": row.get("archtype"),
+                    "footstrike": row.get("footstrike"),
+                    "energyreturn": row.get("energyreturn"),
+                    "releaseyear": row.get("releaseyear"),
+                    "heeldropmm": row.get("heeldropmm"),
+                    "terrain": row.get("terrain"),
 
                     "branches": [],
                 }
 
-            products[
-                product_id
-            ]["branches"].append({
+            branches = products[product_id]["branches"]
 
-                "branchname":
-                    row["branchname"],
+            branch = {
+                "branchname": row["branchname"],
+                "city": row["city"],
+                "quantity": row["quantity"],
+            }
 
-                "city":
-                    row["city"],
+            # A product can produce multiple rows for the same branch when
+            # the underlying joins contain duplicate inventory records.
+            # Merge them into one branch entry instead of displaying the
+            # same branch repeatedly in the UI.
+            existing = next(
+                (
+                    item
+                    for item in branches
+                    if item["branchname"] == branch["branchname"]
+                    and item["city"] == branch["city"]
+                ),
+                None,
+            )
 
-                "quantity":
-                    row["quantity"],
+            if existing is None:
+                branches.append(branch)
+            else:
+                existing["quantity"] += branch["quantity"]
 
-            })
-
-        return list(
-            products.values()
-        )
+        return list(products.values())
