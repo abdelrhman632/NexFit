@@ -53,8 +53,15 @@ function App() {
   }, []);
 
   useEffect(() => {
-    const video = orbVideoRef.current; if (!video) return;
-    if (isListening || loading) video.play().catch(() => {}); else video.pause();
+    const video = orbVideoRef.current;
+    if (!video) return;
+
+    if (isListening || loading) {
+      video.play().catch(() => {});
+    } else {
+      video.pause();
+      try { video.currentTime = 0; } catch {}
+    }
   }, [isListening, loading]);
 
   const toggleListening = () => {
@@ -99,9 +106,9 @@ function App() {
           <div className="hero-badge"><span className="status-dot" />AI-powered shopping</div>
           <h2>Tell us what<span>you're looking for.</span></h2>
           <p className="hero-description">Tell NexFit what you need. We'll search the available products for you.</p>
-          <div className={`orb-container ${isListening || loading ? "active" : ""}`} style={{ position: "relative", width: "220px", height: "220px", marginTop: "30px", display: "flex", alignItems: "center", justifyContent: "center", overflow: "visible" }}>
-            <video ref={orbVideoRef} className="nexfit-orb" src="/nexfit-orb.webm" muted playsInline preload="auto" style={{ position: "absolute", top: "0", left: "0", width: "220px", height: "220px", margin: "0", objectFit: "contain", pointerEvents: "none", zIndex: 1 }} />
-            <button className={`mic-button ${isListening ? "listening" : ""}`} onClick={toggleListening} aria-label={isListening ? "Stop listening" : "Start voice search"} style={{ position: "absolute", top: "50%", left: "50%", width: "76px", height: "76px", margin: "0", padding: "0", transform: "translate(-50%, -50%)", zIndex: 2 }}>
+          <div className={`orb-container ${isListening || loading ? "active" : ""}`} style={{ position: "relative", width: "280px", height: "280px", marginTop: "30px", display: "flex", alignItems: "center", justifyContent: "center", overflow: "visible" }}>
+            <video ref={orbVideoRef} className="nexfit-orb" src="/nexfit-orb.webm" muted playsInline preload="auto" style={{ position: "absolute", top: "0", left: "0", width: "280px", height: "280px", margin: "0", objectFit: "contain", pointerEvents: "none", zIndex: 1 }} />
+            <button className={`mic-button ${isListening ? "listening" : ""}`} onClick={toggleListening} aria-label={isListening ? "Stop listening" : "Start voice search"} style={{ position: "absolute", top: "50%", left: "50%", width: "82px", height: "82px", margin: "0", padding: "0", transform: "translate(-50%, -50%)", zIndex: 2 }}>
               <div className="mic-glow" /><div className="mic-icon">{isListening ? <span className="stop-icon">■</span> : <span className="microphone-icon">🎙</span>}</div>
             </button>
           </div>
