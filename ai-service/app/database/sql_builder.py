@@ -9,10 +9,38 @@ class SQLBuilder:
         include_branch: bool = True,
     ) -> str:
 
+        # =====================================================
+        # BASE CONDITIONS
+        # =====================================================
+
         conditions = [
             "b.isactive = TRUE",
             "i.quantity > 0",
         ]
+
+        # =====================================================
+        # BRAND
+        # =====================================================
+
+        if filters.brand:
+
+            brand = filters.brand.replace("'", "''")
+
+            conditions.append(
+                f"LOWER(p.productbrand) = LOWER('{brand}')"
+            )
+
+        # =====================================================
+        # MODEL
+        # =====================================================
+
+        if filters.model:
+
+            model = filters.model.replace("'", "''")
+
+            conditions.append(
+                f"LOWER(p.productmodel) = LOWER('{model}')"
+            )
 
         # =====================================================
         # GENDER
@@ -20,13 +48,25 @@ class SQLBuilder:
 
         if filters.gender:
 
-            genders = ", ".join(
-                f"'{gender}'"
-                for gender in filters.gender
+            gender_values = []
+
+            for gender in filters.gender:
+
+                escaped_gender = gender.replace(
+                    "'",
+                    "''",
+                )
+
+                gender_values.append(
+                    f"LOWER('{escaped_gender}')"
+                )
+
+            genders_sql = ", ".join(
+                gender_values
             )
 
             conditions.append(
-                f"p.productgender IN ({genders})"
+                f"LOWER(p.productgender) IN ({genders_sql})"
             )
 
         # =====================================================
@@ -35,8 +75,14 @@ class SQLBuilder:
 
         if filters.category:
 
+            category = filters.category.replace(
+                "'",
+                "''",
+            )
+
             conditions.append(
-                f"p.productcategory = '{filters.category}'"
+                f"LOWER(p.productcategory) = "
+                f"LOWER('{category}')"
             )
 
         # =====================================================
@@ -45,8 +91,14 @@ class SQLBuilder:
 
         if filters.usage:
 
+            usage = filters.usage.replace(
+                "'",
+                "''",
+            )
+
             conditions.append(
-                f"p.productusage = '{filters.usage}'"
+                f"LOWER(p.productusage) = "
+                f"LOWER('{usage}')"
             )
 
         # =====================================================
@@ -56,7 +108,7 @@ class SQLBuilder:
         if filters.size is not None:
 
             conditions.append(
-                f"i.productsize = {filters.size}"
+                f"i.productsize = {int(filters.size)}"
             )
 
         # =====================================================
@@ -66,7 +118,8 @@ class SQLBuilder:
         if filters.max_price is not None:
 
             conditions.append(
-                f"p.productprice < {filters.max_price}"
+                f"p.productprice <= "
+                f"{float(filters.max_price)}"
             )
 
         # =====================================================
@@ -76,7 +129,8 @@ class SQLBuilder:
         if filters.min_price is not None:
 
             conditions.append(
-                f"p.productprice >= {filters.min_price}"
+                f"p.productprice >= "
+                f"{float(filters.min_price)}"
             )
 
         # =====================================================
@@ -85,51 +139,79 @@ class SQLBuilder:
 
         if include_branch and filters.branch:
 
-            conditions.append(
-                f"b.branchname = '{filters.branch}'"
+            branch = filters.branch.replace(
+                "'",
+                "''",
             )
+
+            conditions.append(
+                f"LOWER(b.branchname) = "
+                f"LOWER('{branch}')"
+            )
+
+        # =====================================================
+        # WHERE CLAUSE
+        # =====================================================
 
         where_clause = "\n        AND ".join(
             conditions
         )
 
         # =====================================================
-        # FULL PRODUCT QUERY
+        # SQL QUERY
         # =====================================================
 
         return f"""
 SELECT
-    p.productid,
-    p.productsku,
-    p.productname,
-    p.productbrand,
-    p.productmodel,
-    p.productprice,
-    p.productgender,
-    p.productcategory,
-    p.productusage,
 
-    p.productmaterial,
-    p.productsurface,
-    p.productsupporttype,
-    p.productcushioning,
-    p.productbreathability,
-    p.productweight,
-    p.productwaterproof,
-    p.productdescription,
-    p.recommendeddistance,
-    p.archtype,
-    p.footstrike,
-    p.energyreturn,
-    p.releaseyear,
-    p.heeldropmm,
-    p.terrain,
+    -- =====================================================
+    -- BASIC PRODUCT INFORMATION
+    -- =====================================================
 
-    i.productsize,
-    i.quantity,
+    p.productid AS productid,
+    p.productsku AS productsku,
+    p.productname AS productname,
+    p.productbrand AS productbrand,
+    p.productmodel AS productmodel,
+    p.productprice AS productprice,
+    p.productgender AS productgender,
+    p.productcategory AS productcategory,
+    p.productusage AS productusage,
 
-    b.branchname,
-    b.city
+    -- =====================================================
+    -- PRODUCT SPECIFICATIONS
+    -- =====================================================
+
+    p.productmaterial AS material,
+    p.productsurface AS surface,
+    p.productsupporttype AS supporttype,
+    p.productcushioning AS cushioning,
+    p.productbreathability AS breathability,
+    p.productweight AS weight,
+    p.productwaterproof AS waterproof,
+    p.productdescription AS description,
+
+    p.recommendeddistance AS recommendeddistance,
+    p.archtype AS archtype,
+    p.footstrike AS footstrike,
+    p.energyreturn AS energyreturn,
+    p.releaseyear AS releaseyear,
+    p.heeldropmm AS heeldropmm,
+    p.terrain AS terrain,
+
+    -- =====================================================
+    -- INVENTORY
+    -- =====================================================
+
+    i.productsize AS productsize,
+    i.quantity AS quantity,
+
+    -- =====================================================
+    -- BRANCH
+    -- =====================================================
+
+    b.branchname AS branchname,
+    b.city AS city
 
 FROM products p
 
@@ -141,7 +223,8 @@ JOIN branches b
 
 WHERE {where_clause}
 
-ORDER BY p.productprice
+-- Most expensive first
+ORDER BY p.productprice DESC
 
 LIMIT 100;
 """.strip()

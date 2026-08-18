@@ -1,200 +1,147 @@
 import os
-import sys
-import requests
-
+import re
+import time
 from pathlib import Path
+
+import requests
 from dotenv import load_dotenv
 
 
-# =========================================================
+# ============================================================
 # PATHS
-# =========================================================
+# ============================================================
 
-# Current file:
-# NexFit/ai-service/scripts/download_product_images.py
-#
-# parents[0] = scripts
-# parents[1] = ai-service
-# parents[2] = NexFit
+SCRIPT_DIR = Path(__file__).resolve().parent
 
-AI_SERVICE_DIR = Path(__file__).resolve().parents[1]
-PROJECT_DIR = AI_SERVICE_DIR.parent
+AI_SERVICE_DIR = SCRIPT_DIR.parent
 
-FRONTEND_PRODUCTS_DIR = (
-    PROJECT_DIR
-    / "frontend"
-    / "public"
-    / "products"
-)
+ENV_FILE = AI_SERVICE_DIR / ".env"
 
-FRONTEND_PRODUCTS_DIR.mkdir(
+# Change this if your images are stored somewhere else.
+IMAGE_DIR = AI_SERVICE_DIR / "product_images"
+
+IMAGE_DIR.mkdir(
     parents=True,
     exist_ok=True,
 )
 
 
-# =========================================================
-# ENVIRONMENT
-# =========================================================
+# ============================================================
+# ENV
+# ============================================================
 
-ENV_FILE = AI_SERVICE_DIR / ".env"
-
-load_dotenv(
-    dotenv_path=ENV_FILE,
-    override=True,
-)
+load_dotenv(ENV_FILE)
 
 SERPER_API_KEY = os.getenv(
     "SERPER_API_KEY"
 )
 
-print(
-    "ENV FILE:",
-    ENV_FILE
-)
-
-print(
-    "ENV EXISTS:",
-    ENV_FILE.exists()
-)
-
-print(
-    "SERPER KEY FOUND:",
-    bool(SERPER_API_KEY)
-)
+if not SERPER_API_KEY:
+    raise RuntimeError(
+        f"SERPER_API_KEY not found in:\n{ENV_FILE}"
+    )
 
 
-# =========================================================
-# IMPORT EXISTING DATABASE CODE
-# =========================================================
+# ============================================================
+# ONLY THE REMAINING 9
+# ============================================================
 
-sys.path.insert(
-    0,
-    str(AI_SERVICE_DIR)
-)
+PRODUCTS = [
+    "SK-GW6-101",
+    "BK-AW2-101",
+    "NK-SRG3-101",
+    "PM-FUS2-101",
+    "NB-OUT-101",
+    "NK-THR-101",
+    "CV-C70-101",
+    "CV-RSH-101",
+    "AD-PRA1-101",
+    "AD-TSR3-101",
+]
 
-from app.database.query_executor import QueryExecutor
+
+# ============================================================
+# SERPER
+# ============================================================
+
+SERPER_URL = "https://google.serper.dev/images"
+
+HEADERS = {
+    "X-API-KEY": SERPER_API_KEY,
+    "Content-Type": "application/json",
+}
 
 
-# =========================================================
-# GET PRODUCTS FROM DATABASE
-# =========================================================
+# ============================================================
+# HELPERS
+# ============================================================
 
-def get_products():
-
-    executor = QueryExecutor()
-
-    sql = """
-    SELECT DISTINCT
-        p.productsku,
-        p.productbrand,
-        p.productname,
-        p.productmodel
-    FROM products p
-    WHERE p.productsku IS NOT NULL
-      AND p.productname IS NOT NULL
-    ORDER BY p.productsku;
+def clean_filename(value: str) -> str:
+    """
+    Make sure the SKU is safe as a Windows filename.
     """
 
-    return executor.execute(sql)
+    return re.sub(
+        r'[<>:"/\\|?*]',
+        "_",
+        value,
+    )
 
 
-# =========================================================
-# SEARCH IMAGE WITH SERPER
-# =========================================================
+def search_images(sku: str):
+    """
+    Search Google Images through Serper.
+    """
 
-def search_image(
-    brand,
-    name,
-    model,
-):
+    queries = [
+        f'"{sku}" shoe',
+        f'"{sku}" sneakers',
+        sku,
+    ]
 
-    query_parts = []
+    for query in queries:
 
-    if brand:
-        query_parts.append(
-            str(brand).strip()
+        print(
+            f"    Searching: {query}"
         )
 
-    if name:
-        query_parts.append(
-            str(name).strip()
-        )
+        try:
 
-    if model and model != name:
-        query_parts.append(
-            str(model).strip()
-        )
+            response = requests.post(
+                SERPER_URL,
+                headers=HEADERS,
+                json={
+                    "q": query,
+                    "num": 10,
+                },
+                timeout=30,
+            )
 
-    query_parts.extend([
-        "shoe",
-        "product",
-    ])
+            response.raise_for_status()
 
-    query = " ".join(
-        query_parts
-    )
+            data = response.json()
 
-    print(
-        f"  Search: {query}"
-    )
+            images = data.get(
+                "images",
+                []
+            )
 
-    url = (
-        "https://google.serper.dev/images"
-    )
+            if images:
+                return images
 
-    headers = {
-        "X-API-KEY":
-            SERPER_API_KEY,
+        except Exception as exc:
 
-        "Content-Type":
-            "application/json",
-    }
+            print(
+                f"    Search failed: {exc}"
+            )
 
-    payload = {
-        "q": query,
-        "num": 10,
-    }
+    return []
 
-    response = requests.post(
-        url,
-        headers=headers,
-        json=payload,
-        timeout=30,
-    )
-
-    response.raise_for_status()
-
-    data = response.json()
-
-    images = data.get(
-        "images",
-        []
-    )
-
-    if not images:
-        return None
-
-    for image in images:
-
-        image_url = image.get(
-            "imageUrl"
-        )
-
-        if image_url:
-            return image_url
-
-    return None
-
-
-# =========================================================
-# DOWNLOAD IMAGE
-# =========================================================
 
 def download_image(
-    image_url,
-    output_path,
-):
+    image_url: str,
+    output_path: Path,
+) -> bool:
 
     try:
 
@@ -209,315 +156,216 @@ def download_image(
 
         response.raise_for_status()
 
-        content_type = (
-            response.headers
-            .get(
-                "Content-Type",
-                ""
-            )
-            .lower()
-        )
+        content_type = response.headers.get(
+            "Content-Type",
+            "",
+        ).lower()
 
         if not content_type.startswith(
             "image/"
         ):
-
-            print(
-                "  ✗ URL is not an image"
-            )
-
             return False
 
-        with open(
-            output_path,
-            "wb",
-        ) as file:
+        if len(response.content) < 5000:
+            return False
 
-            file.write(
-                response.content
-            )
+        output_path.write_bytes(
+            response.content
+        )
 
         return True
 
     except Exception as exc:
 
         print(
-            f"  ✗ Download error: {exc}"
+            f"    Download failed: {exc}"
         )
 
         return False
 
 
-# =========================================================
-# PROCESS PRODUCT
-# =========================================================
+# ============================================================
+# DOWNLOAD ONE PRODUCT
+# ============================================================
 
-def process_product(
-    product,
-    index,
-    total,
-):
+def download_product(
+    sku: str,
+) -> bool:
 
-    sku = product[
-        "productsku"
-    ]
-
-    brand = product[
-        "productbrand"
-    ]
-
-    name = product[
-        "productname"
-    ]
-
-    model = product.get(
-        "productmodel"
+    filename = (
+        clean_filename(sku)
+        + ".jpg"
     )
 
     output_path = (
-        FRONTEND_PRODUCTS_DIR
-        / f"{sku}.jpg"
+        IMAGE_DIR / filename
     )
 
     print()
-    print(
-        "-" * 60
-    )
+    print("=" * 60)
+    print(f"PRODUCT: {sku}")
+    print("=" * 60)
 
-    print(
-        f"[{index}/{total}] "
-        f"{brand} {name}"
-    )
-
-    print(
-        f"SKU: {sku}"
-    )
-
-    # -----------------------------------------------------
-    # Already downloaded
-    # -----------------------------------------------------
+    # --------------------------------------------------------
+    # Already exists
+    # --------------------------------------------------------
 
     if output_path.exists():
 
         print(
-            "  ✓ Already exists"
+            f"Already exists: {output_path}"
         )
 
-        return "exists"
+        return True
 
-    # -----------------------------------------------------
+    # --------------------------------------------------------
     # Search
-    # -----------------------------------------------------
+    # --------------------------------------------------------
 
-    try:
+    images = search_images(
+        sku
+    )
 
-        image_url = search_image(
-            brand,
-            name,
-            model,
-        )
-
-    except Exception as exc:
+    if not images:
 
         print(
-            f"  ✗ Search failed: {exc}"
+            "    ❌ No images found"
         )
 
-        return "failed"
-
-    if not image_url:
-
-        print(
-            "  ✗ No image found"
-        )
-
-        return "not_found"
+        return False
 
     print(
-        "  ✓ Image found"
+        f"    Found {len(images)} image results"
     )
 
-    # -----------------------------------------------------
-    # Download
-    # -----------------------------------------------------
+    # --------------------------------------------------------
+    # Try images one by one
+    # --------------------------------------------------------
 
-    success = download_image(
-        image_url,
-        output_path,
-    )
+    for index, image in enumerate(
+        images,
+        start=1,
+    ):
 
-    if success:
-
-        print(
-            "  ✓ Saved:"
+        image_url = image.get(
+            "imageUrl"
         )
 
+        if not image_url:
+            continue
+
         print(
-            f"    {output_path}"
+            f"    Trying image {index}..."
         )
 
-        return "downloaded"
+        success = download_image(
+            image_url,
+            output_path,
+        )
+
+        if success:
+
+            print(
+                f"    ✅ Downloaded:"
+                f" {output_path.name}"
+            )
+
+            return True
 
     print(
-        "  ✗ Download failed"
+        "    ❌ All image downloads failed"
     )
 
-    return "failed"
+    return False
 
 
-# =========================================================
+# ============================================================
 # MAIN
-# =========================================================
+# ============================================================
 
 def main():
 
     print()
+    print("=" * 60)
     print(
-        "=" * 60
+        "NEXFIT — REMAINING PRODUCT IMAGE DOWNLOADER"
+    )
+    print("=" * 60)
+
+    print(
+        f"ENV: {ENV_FILE}"
     )
 
     print(
-        "NEXFIT PRODUCT IMAGE DOWNLOADER"
+        f"IMAGE DIRECTORY: {IMAGE_DIR}"
     )
 
     print(
-        "=" * 60
-    )
-
-    print()
-
-    # =====================================================
-    # CHECK API KEY
-    # =====================================================
-
-    if not SERPER_API_KEY:
-
-        raise RuntimeError(
-            "SERPER_API_KEY is missing "
-            "from ai-service/.env"
-        )
-
-    # =====================================================
-    # LOAD PRODUCTS
-    # =====================================================
-
-    print(
-        "Loading products from database..."
-    )
-
-    try:
-
-        products = get_products()
-
-    except Exception as exc:
-
-        print()
-        print(
-            "=" * 60
-        )
-
-        print(
-            "DATABASE ERROR"
-        )
-
-        print(
-            "=" * 60
-        )
-
-        print(exc)
-
-        return
-
-    print()
-
-    print(
-        f"Found {len(products)} "
-        f"products."
-    )
-
-    # =====================================================
-    # STATISTICS
-    # =====================================================
-
-    results = {
-        "downloaded": 0,
-        "exists": 0,
-        "not_found": 0,
-        "failed": 0,
-    }
-
-    total = len(products)
-
-    # =====================================================
-    # DOWNLOAD ALL PRODUCTS
-    # =====================================================
-
-    for index, product in enumerate(
-        products,
-        start=1,
-    ):
-
-        result = process_product(
-            product,
-            index,
-            total,
-        )
-
-        results[result] += 1
-
-    # =====================================================
-    # FINAL SUMMARY
-    # =====================================================
-
-    print()
-    print(
-        "=" * 60
-    )
-
-    print(
-        "DOWNLOAD COMPLETE"
-    )
-
-    print(
-        "=" * 60
-    )
-
-    print(
-        f"Downloaded : "
-        f"{results['downloaded']}"
-    )
-
-    print(
-        f"Already had: "
-        f"{results['exists']}"
-    )
-
-    print(
-        f"Not found  : "
-        f"{results['not_found']}"
-    )
-
-    print(
-        f"Failed     : "
-        f"{results['failed']}"
+        f"Products remaining: {len(PRODUCTS)}"
     )
 
     print()
 
-    print(
-        "Images directory:"
-    )
+    downloaded = 0
+    already_exists = 0
+    failed = 0
 
-    print(
-        FRONTEND_PRODUCTS_DIR
-    )
+    for sku in PRODUCTS:
+
+        output_path = (
+            IMAGE_DIR
+            / f"{clean_filename(sku)}.jpg"
+        )
+
+        if output_path.exists():
+
+            already_exists += 1
+
+            print(
+                f"✓ Already exists: {sku}"
+            )
+
+            continue
+
+        success = download_product(
+            sku
+        )
+
+        if success:
+            downloaded += 1
+        else:
+            failed += 1
+
+        # Avoid hammering Serper
+        time.sleep(1)
+
+    # ========================================================
+    # SUMMARY
+    # ========================================================
 
     print()
+    print("=" * 60)
+    print("DOWNLOAD COMPLETE")
+    print("=" * 60)
 
+    print(
+        f"Downloaded    : {downloaded}"
+    )
 
-# =========================================================
-# RUN
-# =========================================================
+    print(
+        f"Already had   : {already_exists}"
+    )
+
+    print(
+        f"Failed        : {failed}"
+    )
+
+    print(
+        f"Total checked : {len(PRODUCTS)}"
+    )
+
+    print("=" * 60)
+
 
 if __name__ == "__main__":
     main()

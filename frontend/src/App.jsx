@@ -1,285 +1,37 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "./App.css";
 
-/* =========================================================
-   PRODUCT MODAL
-   ========================================================= */
-
-function ProductModal({ product, onClose }) {
-  const [showBack, setShowBack] = useState(false);
-
-  const frontImage = `/products/${product.sku}.jpg`;
-  const backImage = `/products/${product.sku}-back.jpg`;
-
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div
-        className="product-modal"
-        onClick={(event) => event.stopPropagation()}
-      >
-        {/* CLOSE */}
-
-        <button
-          className="modal-close"
-          onClick={onClose}
-        >
-          ×
-        </button>
-
-        {/* =================================================
-            IMAGE
-            ================================================= */}
-
-        <div className="modal-image-container">
-          <div
-            className={`shoe-flipper ${
-              showBack ? "flipped" : ""
-            }`}
-          >
-            {/* FRONT */}
-
-            <div className="shoe-face">
-              <img
-                src={frontImage}
-                alt={product.productname}
-                onError={(event) => {
-                  event.currentTarget.style.display =
-                    "none";
-                }}
-              />
-            </div>
-
-            {/* BACK */}
-
-            <div className="shoe-back">
-              <img
-                src={backImage}
-                alt={`${product.productname} back`}
-                onError={(event) => {
-                  event.currentTarget.style.display =
-                    "none";
-                }}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* FLIP */}
-
-        <button
-          className="flip-button"
-          onClick={() =>
-            setShowBack((current) => !current)
-          }
-        >
-          {showBack ? "Show Front" : "Show Back"}
-        </button>
-
-        {/* =================================================
-            PRODUCT INFORMATION
-            ================================================= */}
-
-        <div className="modal-content">
-          <p className="modal-brand">
-            {product.productbrand}
-          </p>
-
-          <h2>{product.productname}</h2>
-
-          <p className="modal-model">
-            {product.productmodel}
-          </p>
-
-          <div className="modal-price">
-            {Number(
-              product.productprice
-            ).toLocaleString()}
-
-            <span> EGP</span>
-          </div>
-
-          {/* =================================================
-              SPECIFICATIONS
-              ================================================= */}
-
-          <div className="spec-grid">
-            <Spec
-              label="Size"
-              value={product.productsize}
-            />
-
-            <Spec
-              label="Weight"
-              value={
-                product.weight != null
-                  ? `${product.weight} g`
-                  : "-"
-              }
-            />
-
-            <Spec
-              label="Material"
-              value={product.material}
-            />
-
-            <Spec
-              label="Cushioning"
-              value={product.cushioning}
-            />
-
-            <Spec
-              label="Support"
-              value={product.supporttype}
-            />
-
-            <Spec
-              label="Breathability"
-              value={product.breathability}
-            />
-
-            <Spec
-              label="Surface"
-              value={product.surface}
-            />
-
-            <Spec
-              label="Terrain"
-              value={product.terrain}
-            />
-
-            <Spec
-              label="Foot Strike"
-              value={product.footstrike}
-            />
-
-            <Spec
-              label="Energy Return"
-              value={product.energyreturn}
-            />
-
-            <Spec
-              label="Heel Drop"
-              value={
-                product.heeldropmm != null
-                  ? `${product.heeldropmm} mm`
-                  : "-"
-              }
-            />
-
-            <Spec
-              label="Distance"
-              value={
-                product.recommendeddistance
-              }
-            />
-
-            <Spec
-              label="Arch Type"
-              value={product.archtype}
-            />
-
-            <Spec
-              label="Waterproof"
-              value={
-                product.waterproof === true
-                  ? "Yes"
-                  : product.waterproof === false
-                    ? "No"
-                    : "-"
-              }
-            />
-
-            <Spec
-              label="Release Year"
-              value={product.releaseyear}
-            />
-          </div>
-
-          {/* =================================================
-              DESCRIPTION
-              ================================================= */}
-
-          {product.description && (
-            <div className="modal-description">
-              <h3>Description</h3>
-
-              <p>
-                {product.description}
-              </p>
-            </div>
-          )}
-
-          {/* =================================================
-              BRANCHES
-              ================================================= */}
-
-          {product.branches?.length > 0 && (
-            <div className="modal-branches">
-              <h3>Available at</h3>
-
-              {product.branches.map(
-                (branch, index) => (
-                  <div
-                    className="modal-branch"
-                    key={index}
-                  >
-                    <span>
-                      {branch.branchname}
-                    </span>
-
-                    <strong>
-                      {branch.quantity} available
-                    </strong>
-                  </div>
-                )
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-
-/* =========================================================
-   SPECIFICATION COMPONENT
-   ========================================================= */
-
-function Spec({ label, value }) {
-  return (
-    <div className="spec">
-      <span>{label}</span>
-
-      <strong>
-        {value ?? "-"}
-      </strong>
-    </div>
-  );
-}
-
-
-/* =========================================================
-   MAIN APP
-   ========================================================= */
+const API_URL = "http://127.0.0.1:8000";
 
 function App() {
+  // =========================================================
+  // STATE
+  // =========================================================
+
+  const [isListening, setIsListening] = useState(false);
+  const [transcript, setTranscript] = useState("");
   const [products, setProducts] = useState([]);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [showBack, setShowBack] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [listening, setListening] = useState(false);
   const [error, setError] = useState("");
-  const [selectedProduct, setSelectedProduct] =
-    useState(null);
+
+  // =========================================================
+  // SPEECH RECOGNITION REFS
+  // IMPORTANT: ONLY ONE COPY OF THESE
+  // =========================================================
 
   const recognitionRef = useRef(null);
-  const transcriptRef = useRef("");
+  const finalTranscriptRef = useRef("");
+  const listeningRef = useRef(false);
+  const manuallyStoppedRef = useRef(false);
+  const restartTimeoutRef = useRef(null);
 
+  // =========================================================
+  // SPEECH RECOGNITION
+  // =========================================================
 
-  /* =======================================================
-     START STT
-     ======================================================= */
-
-  const startListening = () => {
+  useEffect(() => {
     const SpeechRecognition =
       window.SpeechRecognition ||
       window.webkitSpeechRecognition;
@@ -292,140 +44,360 @@ function App() {
       return;
     }
 
-    setError("");
-    setProducts([]);
-    setSelectedProduct(null);
+    const recognition = new SpeechRecognition();
 
-    const recognition =
-      new SpeechRecognition();
-
+    // Arabic/Egyptian speech
     recognition.lang = "ar-EG";
+
+    /*
+     * IMPORTANT
+     *
+     * continuous = true means we want a long
+     * conversation instead of a single phrase.
+     *
+     * Chrome can still terminate recognition
+     * after silence, so onend() below restarts it.
+     */
     recognition.continuous = true;
+
     recognition.interimResults = true;
 
-    recognitionRef.current = recognition;
-    transcriptRef.current = "";
+    recognition.maxAlternatives = 1;
+
+    // =======================================================
+    // START
+    // =======================================================
 
     recognition.onstart = () => {
-      console.log("STT started");
+      console.log(
+        "Speech recognition started"
+      );
 
-      setListening(true);
+      setIsListening(true);
+
+      listeningRef.current = true;
+
+      setError("");
     };
 
+    // =======================================================
+    // RESULT
+    // =======================================================
+
     recognition.onresult = (event) => {
-      let finalTranscript = "";
+      let interimText = "";
 
       for (
         let i = event.resultIndex;
         i < event.results.length;
         i++
       ) {
-        const transcript =
+        const text =
           event.results[i][0].transcript;
 
         if (event.results[i].isFinal) {
-          finalTranscript += transcript;
+          /*
+           * Keep previous final speech.
+           *
+           * Example:
+           *
+           * "عايز جزمة"
+           *
+           * then:
+           *
+           * "مشي"
+           *
+           * becomes:
+           *
+           * "عايز جزمة مشي"
+           */
+
+          finalTranscriptRef.current +=
+            text + " ";
+        } else {
+          interimText += text;
         }
       }
 
-      if (finalTranscript) {
-        transcriptRef.current +=
-          " " + finalTranscript;
+      const combined =
+        finalTranscriptRef.current +
+        interimText;
 
-        console.log(
-          "Transcript:",
-          transcriptRef.current
-        );
-      }
+      setTranscript(
+        combined.trim()
+      );
+
+      console.log(
+        "TRANSCRIPT:",
+        combined.trim()
+      );
     };
+
+    // =======================================================
+    // ERROR
+    // =======================================================
 
     recognition.onerror = (event) => {
       console.error(
-        "STT error:",
+        "Speech recognition error:",
         event.error
       );
 
-      if (event.error !== "no-speech") {
-        setError(
-          `Speech recognition error: ${event.error}`
-        );
+      /*
+       * These are not fatal.
+       *
+       * Chrome can generate these while we are
+       * trying to maintain continuous recognition.
+       */
+
+      if (
+        event.error === "no-speech" ||
+        event.error === "aborted"
+      ) {
+        return;
       }
+
+      if (
+        event.error === "not-allowed"
+      ) {
+        listeningRef.current = false;
+
+        setIsListening(false);
+
+        setError(
+          "Microphone permission was denied."
+        );
+
+        return;
+      }
+
+      setError(
+        `Speech recognition error: ${event.error}`
+      );
     };
+
+    // =======================================================
+    // END
+    // =======================================================
 
     recognition.onend = () => {
-      console.log("STT ended");
-
-      setListening(false);
-
-      const transcript =
-        transcriptRef.current.trim();
-
       console.log(
-        "FINAL TRANSCRIPT:",
-        transcript
+        "Speech recognition ended"
       );
 
-      recognitionRef.current = null;
+      /*
+       * CASE 1:
+       *
+       * The USER pressed the microphone button
+       * to stop.
+       *
+       * In this case we send the transcript
+       * to the backend.
+       */
 
-      if (transcript) {
-        searchProducts(transcript);
+      if (
+        manuallyStoppedRef.current
+      ) {
+        console.log(
+          "Recognition stopped manually."
+        );
+
+        listeningRef.current = false;
+
+        setIsListening(false);
+
+        const finalText =
+          finalTranscriptRef.current.trim();
+
+        if (finalText) {
+          searchProducts(finalText);
+        }
+
+        return;
+      }
+
+      /*
+       * CASE 2:
+       *
+       * Chrome stopped recognition automatically
+       * because of silence.
+       *
+       * DO NOT search.
+       *
+       * Restart recognition instead.
+       */
+
+      if (listeningRef.current) {
+        console.log(
+          "Browser ended recognition. Restarting..."
+        );
+
+        clearTimeout(
+          restartTimeoutRef.current
+        );
+
+        restartTimeoutRef.current =
+          setTimeout(() => {
+            try {
+              recognition.start();
+
+              console.log(
+                "Speech recognition restarted."
+              );
+            } catch (restartError) {
+              /*
+               * Chrome sometimes says recognition
+               * is already running.
+               *
+               * This is safe to ignore.
+               */
+
+              console.log(
+                "Recognition restart ignored:",
+                restartError
+              );
+            }
+          }, 300);
       }
     };
 
-    recognition.start();
-  };
+    // =======================================================
+    // SAVE RECOGNITION INSTANCE
+    // =======================================================
 
+    recognitionRef.current =
+      recognition;
 
-  /* =======================================================
-     STOP STT
-     ======================================================= */
+    // =======================================================
+    // CLEANUP
+    // =======================================================
 
-  const stopListening = () => {
-    if (!recognitionRef.current) {
+    return () => {
+      clearTimeout(
+        restartTimeoutRef.current
+      );
+
+      listeningRef.current = false;
+
+      manuallyStoppedRef.current = true;
+
+      try {
+        recognition.stop();
+      } catch {
+        // Ignore cleanup errors.
+      }
+
+      recognitionRef.current = null;
+    };
+  }, []);
+
+  // =========================================================
+  // MICROPHONE
+  // =========================================================
+
+  const toggleListening = () => {
+    const recognition =
+      recognitionRef.current;
+
+    if (!recognition) {
+      setError(
+        "Speech recognition is not available."
+      );
+
       return;
     }
 
-    console.log("Stopping STT...");
+    // =======================================================
+    // STOP
+    // =======================================================
 
-    recognitionRef.current.stop();
-  };
+    if (listeningRef.current) {
+      console.log(
+        "User stopped listening."
+      );
 
+      /*
+       * Tell onend() that this was intentional.
+       */
 
-  /* =======================================================
-     MICROPHONE
-     ======================================================= */
+      manuallyStoppedRef.current =
+        true;
 
-  const toggleListening = () => {
-    if (listening) {
-      stopListening();
-    } else {
-      startListening();
+      listeningRef.current = false;
+
+      clearTimeout(
+        restartTimeoutRef.current
+      );
+
+      try {
+        recognition.stop();
+      } catch {
+        // Recognition may already have stopped.
+      }
+
+      return;
+    }
+
+    // =======================================================
+    // START
+    // =======================================================
+
+    console.log(
+      "Starting voice search..."
+    );
+
+    setError("");
+
+    setProducts([]);
+
+    setTranscript("");
+
+    finalTranscriptRef.current = "";
+
+    manuallyStoppedRef.current =
+      false;
+
+    listeningRef.current = true;
+
+    try {
+      recognition.start();
+    } catch (error) {
+      console.error(
+        "Could not start speech recognition:",
+        error
+      );
     }
   };
 
+  // =========================================================
+  // SEARCH BACKEND
+  // =========================================================
 
-  /* =======================================================
-     SEARCH BACKEND
-     ======================================================= */
-
-  const searchProducts = async (voiceQuery) => {
-    if (!voiceQuery?.trim()) {
+  const searchProducts = async (query) => {
+    if (!query?.trim()) {
       return;
     }
 
     console.log(
       "Sending query to backend:",
-      voiceQuery
+      query
     );
 
     setLoading(true);
+
     setError("");
-    setProducts([]);
-    setSelectedProduct(null);
 
     try {
+      /*
+       * IMPORTANT:
+       *
+       * Backend endpoint:
+       *
+       * POST /api/search
+       */
+
       const response = await fetch(
-        "http://localhost:8000/api/search",
+        `${API_URL}/api/search`,
         {
           method: "POST",
 
@@ -434,14 +406,19 @@ function App() {
           },
 
           body: JSON.stringify({
-            query: voiceQuery,
+            query: query.trim(),
           }),
         }
       );
 
+      console.log(
+        "Backend status:",
+        response.status
+      );
+
       if (!response.ok) {
         throw new Error(
-          `Search request failed: ${response.status}`
+          `Backend returned ${response.status}`
         );
       }
 
@@ -454,28 +431,71 @@ function App() {
       );
 
       setProducts(
-        data.products || []
+        Array.isArray(data.products)
+          ? data.products
+          : []
+      );
+    } catch (err) {
+      console.error(
+        "Search error:",
+        err
       );
 
-    } catch (err) {
-      console.error(err);
+      setProducts([]);
 
       setError(
-        err.message ||
-        "Something went wrong while searching."
+        "Could not connect to the NexFit AI service."
       );
-
     } finally {
       setLoading(false);
     }
   };
 
+  // =========================================================
+  // PRODUCT MODAL
+  // =========================================================
 
-  /* =======================================================
-     PRODUCT IMAGE
-     ======================================================= */
+  const openProduct = (product) => {
+    setSelectedProduct(product);
 
-  const getProductImage = (product) => {
+    setShowBack(false);
+  };
+
+  const closeProduct = () => {
+    setSelectedProduct(null);
+
+    setShowBack(false);
+  };
+
+  // =========================================================
+  // ESCAPE KEY
+  // =========================================================
+
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        closeProduct();
+      }
+    };
+
+    window.addEventListener(
+      "keydown",
+      handleKeyDown
+    );
+
+    return () => {
+      window.removeEventListener(
+        "keydown",
+        handleKeyDown
+      );
+    };
+  }, []);
+
+  // =========================================================
+  // HELPERS
+  // =========================================================
+
+  const getImage = (product) => {
     if (!product?.sku) {
       return null;
     }
@@ -483,116 +503,226 @@ function App() {
     return `/products/${product.sku}.jpg`;
   };
 
+  const getBackImage = (product) => {
+    if (!product?.sku) {
+      return null;
+    }
 
-  /* =======================================================
-     RENDER
-     ======================================================= */
+    return `/products/${product.sku}-back.jpg`;
+  };
+
+  const formatPrice = (price) => {
+    if (
+      price === null ||
+      price === undefined ||
+      price === ""
+    ) {
+      return "-";
+    }
+
+    return `${Number(
+      price
+    ).toLocaleString()} EGP`;
+  };
+
+  const displayValue = (
+    value,
+    fallback = "-"
+  ) => {
+    if (
+      value === null ||
+      value === undefined ||
+      value === ""
+    ) {
+      return fallback;
+    }
+
+    return value;
+  };
+
+  const getTotalQuantity = (
+    product
+  ) => {
+    if (
+      !Array.isArray(
+        product?.branches
+      )
+    ) {
+      return 0;
+    }
+
+    return product.branches.reduce(
+      (total, branch) =>
+        total +
+        Number(
+          branch.quantity || 0
+        ),
+      0
+    );
+  };
+
+  // =========================================================
+  // RENDER
+  // =========================================================
 
   return (
     <div className="app">
 
-      {/* =================================================
+      {/* ===================================================
           HEADER
-          ================================================= */}
+          =================================================== */}
 
       <header className="header">
-        <div className="brand-container">
-          <h1>NexFit</h1>
+
+        <div className="brand">
+
+          <h1>
+            NexFit
+          </h1>
 
           <p>
             AI Product Search
           </p>
+
         </div>
+
       </header>
 
-
-      {/* =================================================
+      {/* ===================================================
           MAIN
-          ================================================= */}
+          =================================================== */}
 
       <main className="main">
 
         {/* =================================================
-            VOICE SEARCH
+            HERO
             ================================================= */}
 
-        <section className="voice-section">
+        <section className="hero">
 
-          <div className="hero-glow"></div>
+          <div className="hero-badge">
 
-          <p className="eyebrow">
-            AI-POWERED SHOPPING
-          </p>
+            <span className="status-dot" />
+
+            AI-powered shopping
+
+          </div>
 
           <h2>
-            What are you looking for?
+
+            Tell us what
+
+            <span>
+              you're looking for.
+            </span>
+
           </h2>
 
-          <p className="voice-description">
-            Tell NexFit what you need and
-            we'll find the available
+          <p className="hero-description">
+
+            Tell NexFit what you need.
+            We'll search the available
             products for you.
+
           </p>
 
+          {/* ===============================================
+              MICROPHONE
+              =============================================== */}
+
           <button
-            className={`voice-button ${
-              listening
+            className={`mic-button ${
+              isListening
                 ? "listening"
                 : ""
             }`}
-            onClick={toggleListening}
-            disabled={loading}
+            onClick={
+              toggleListening
+            }
             aria-label={
-              listening
+              isListening
                 ? "Stop listening"
                 : "Start voice search"
             }
           >
-            <span className="mic-icon">
-              {listening
-                ? "■"
-                : "🎙️"}
-            </span>
+
+            <div className="mic-glow" />
+
+            <div className="mic-icon">
+
+              {isListening ? (
+                <span className="stop-icon">
+                  ■
+                </span>
+              ) : (
+                <span className="microphone-icon">
+                  🎙
+                </span>
+              )}
+
+            </div>
+
           </button>
 
-          <p className="voice-status">
-            {listening
-              ? "Listening..."
-              : loading
-                ? "Finding products..."
-                : "Tap the microphone and tell us what you need."}
+          <p
+            className={`mic-status ${
+              isListening
+                ? "active"
+                : ""
+            }`}
+          >
+
+            {isListening
+              ? "Listening... Take your time. Press the microphone when you're finished."
+              : "Tap the microphone and tell us what you need"}
+
           </p>
 
+          {/* ===============================================
+              TRANSCRIPT DEBUG
+              =============================================== */}
+
+          {transcript && (
+            <div className="transcript-box">
+
+              <span className="transcript-label">
+                TRANSCRIPT
+              </span>
+
+              <p>
+                {transcript}
+              </p>
+
+            </div>
+          )}
+
+          {/* ===============================================
+              ERROR
+              =============================================== */}
+
+          {error && (
+            <div className="error-box">
+              {error}
+            </div>
+          )}
+
         </section>
-
-
-        {/* =================================================
-            ERROR
-            ================================================= */}
-
-        {error && (
-          <div className="error">
-            {error}
-          </div>
-        )}
-
 
         {/* =================================================
             LOADING
             ================================================= */}
 
         {loading && (
-          <section className="loading-container">
+          <section className="loading-section">
 
-            <div className="loading-spinner"></div>
+            <div className="spinner" />
 
             <p>
-              Searching NexFit...
+              Searching available products...
             </p>
 
           </section>
         )}
-
 
         {/* =================================================
             RESULTS
@@ -600,37 +730,32 @@ function App() {
 
         {!loading &&
           products.length > 0 && (
-
             <section className="results-section">
 
               <div className="results-header">
 
                 <div>
 
-                  <p className="results-eyebrow">
-                    MATCHES FOUND
-                  </p>
+                  <span className="section-label">
+                    SEARCH RESULTS
+                  </span>
 
-                  <h2>
-                    Search Results
-                  </h2>
+                  <h3>
+                    {products.length}{" "}
+                    products found
+                  </h3>
 
                 </div>
 
-                <span className="result-count">
-                  {products.length} products
-                </span>
-
               </div>
 
-
-              <div className="product-grid">
+              <div className="products-grid">
 
                 {products.map(
                   (product) => {
 
                     const image =
-                      getProductImage(
+                      getImage(
                         product
                       );
 
@@ -638,10 +763,11 @@ function App() {
                       <article
                         className="product-card"
                         key={
-                          product.productid
+                          product.productid ??
+                          product.sku
                         }
                         onClick={() =>
-                          setSelectedProduct(
+                          openProduct(
                             product
                           )
                         }
@@ -649,10 +775,9 @@ function App() {
 
                         {/* IMAGE */}
 
-                        <div className="product-image">
+                        <div className="card-image">
 
                           {image ? (
-
                             <img
                               src={image}
                               alt={
@@ -663,138 +788,98 @@ function App() {
                               ) => {
                                 event.currentTarget.style.display =
                                   "none";
+
+                                event.currentTarget.parentElement.classList.add(
+                                  "image-missing"
+                                );
                               }}
                             />
-
                           ) : (
-
                             <div className="image-placeholder">
-                              {product.productbrand}
-                            </div>
 
+                              <span>
+                                {
+                                  product.productbrand
+                                }
+                              </span>
+
+                              <small>
+                                No image
+                              </small>
+
+                            </div>
                           )}
+
+                          <div className="card-view">
+                            View details →
+                          </div>
 
                         </div>
 
+                        {/* CONTENT */}
 
-                        {/* INFORMATION */}
+                        <div className="card-content">
 
-                        <div className="product-info">
+                          <span className="card-brand">
+                            {
+                              product.productbrand
+                            }
+                          </span>
 
-                          <p className="product-brand">
-                            {product.productbrand}
+                          <h4>
+                            {
+                              product.productname
+                            }
+                          </h4>
+
+                          <p className="card-model">
+                            {
+                              product.productmodel
+                            }
                           </p>
 
-                          <h3>
-                            {product.productname}
-                          </h3>
-
-                          <p className="product-model">
-                            {product.productmodel}
-                          </p>
-
-                          <div className="price">
-
-                            {Number(
+                          <div className="card-price">
+                            {formatPrice(
                               product.productprice
-                            ).toLocaleString()}
+                            )}
+                          </div>
+
+                          <div className="card-tags">
 
                             <span>
-                              EGP
+                              Size{" "}
+                              {displayValue(
+                                product.productsize
+                              )}
+                            </span>
+
+                            <span>
+                              {displayValue(
+                                product.productcategory
+                              )}
                             </span>
 
                           </div>
 
-                          <div className="product-details">
+                          <div className="card-footer">
 
-                            <div>
-                              <span>
-                                Size
-                              </span>
+                            <span>
+                              {displayValue(
+                                product.productusage
+                              )}
+                            </span>
 
-                              <strong>
-                                {
-                                  product.productsize
-                                }
-                              </strong>
-                            </div>
-
-                            <div>
-                              <span>
-                                Category
-                              </span>
-
-                              <strong>
-                                {
-                                  product.productcategory
-                                }
-                              </strong>
-                            </div>
-
-                            <div>
-                              <span>
-                                Usage
-                              </span>
-
-                              <strong>
-                                {
-                                  product.productusage
-                                }
-                              </strong>
-                            </div>
+                            <span className="availability">
+                              ●{" "}
+                              {
+                                getTotalQuantity(
+                                  product
+                                )
+                              }{" "}
+                              available
+                            </span>
 
                           </div>
-
-
-                          {/* BRANCHES */}
-
-                          {product.branches?.length >
-                            0 && (
-
-                              <div className="branches">
-
-                                <div className="availability-title">
-
-                                  <span className="availability-dot"></span>
-
-                                  Available at
-
-                                </div>
-
-                                {product.branches.map(
-                                  (
-                                    branch,
-                                    index
-                                  ) => (
-
-                                    <div
-                                      className="branch"
-                                      key={
-                                        index
-                                      }
-                                    >
-
-                                      <span>
-                                        {
-                                          branch.branchname
-                                        }
-                                      </span>
-
-                                      <span>
-                                        {
-                                          branch.quantity
-                                        }{" "}
-                                        available
-                                      </span>
-
-                                    </div>
-
-                                  )
-                                )}
-
-                              </div>
-
-                            )}
 
                         </div>
 
@@ -808,28 +893,26 @@ function App() {
             </section>
           )}
 
-
         {/* =================================================
-            EMPTY STATE
+            NO RESULTS
             ================================================= */}
 
         {!loading &&
-          !error &&
-          products.length === 0 && (
+          transcript &&
+          products.length === 0 &&
+          !error && (
+            <section className="no-results">
 
-            <section className="empty-state">
-
-              <div className="empty-icon">
-                🎙️
+              <div className="no-results-icon">
+                🔎
               </div>
 
               <h3>
-                Start your search
+                No products found
               </h3>
 
               <p>
-                Tell NexFit what you're
-                looking for.
+                Try describing what you need differently.
               </p>
 
             </section>
@@ -837,19 +920,409 @@ function App() {
 
       </main>
 
-
-      {/* =================================================
+      {/* =====================================================
           PRODUCT MODAL
-          ================================================= */}
+          ===================================================== */}
 
       {selectedProduct && (
-        <ProductModal
-          product={selectedProduct}
-          onClose={() =>
-            setSelectedProduct(null)
+        <div
+          className="modal-overlay"
+          onClick={
+            closeProduct
           }
-        />
+        >
+
+          <div
+            className="product-modal"
+            onClick={(event) =>
+              event.stopPropagation()
+            }
+          >
+
+            {/* CLOSE */}
+
+            <button
+              className="modal-close"
+              onClick={
+                closeProduct
+              }
+              aria-label="Close"
+            >
+              ×
+            </button>
+
+            <div className="modal-layout">
+
+              {/* =============================================
+                  IMAGE
+                  ============================================= */}
+
+              <div className="modal-image-section">
+
+                <div
+                  className={`product-image-viewer ${
+                    showBack
+                      ? "show-back"
+                      : ""
+                  }`}
+                >
+
+                  {/* FRONT */}
+
+                  <div className="image-face front">
+
+                    <img
+                      src={getImage(
+                        selectedProduct
+                      )}
+                      alt={
+                        selectedProduct.productname
+                      }
+                      onError={(
+                        event
+                      ) => {
+                        event.currentTarget.style.display =
+                          "none";
+                      }}
+                    />
+
+                  </div>
+
+                  {/* BACK */}
+
+                  <div className="image-face back">
+
+                    <img
+                      src={getBackImage(
+                        selectedProduct
+                      )}
+                      alt={`${selectedProduct.productname} back`}
+                      onError={(
+                        event
+                      ) => {
+                        event.currentTarget.style.display =
+                          "none";
+                      }}
+                    />
+
+                  </div>
+
+                </div>
+
+                <button
+                  className="flip-button"
+                  onClick={() =>
+                    setShowBack(
+                      !showBack
+                    )
+                  }
+                >
+                  {showBack
+                    ? "Show Front"
+                    : "Show Back"}
+                </button>
+
+              </div>
+
+              {/* =============================================
+                  DETAILS
+                  ============================================= */}
+
+              <div className="modal-details">
+
+                <div className="product-detail-header">
+
+                  <span className="product-detail-brand">
+                    {
+                      selectedProduct.productbrand
+                    }
+                  </span>
+
+                  <h2>
+                    {
+                      selectedProduct.productname
+                    }
+                  </h2>
+
+                  <p className="product-detail-model">
+                    {
+                      selectedProduct.productmodel
+                    }
+                  </p>
+
+                  <div className="product-detail-price">
+                    {formatPrice(
+                      selectedProduct.productprice
+                    )}
+                  </div>
+
+                </div>
+
+                {/* =========================================
+                    SPECIFICATIONS
+                    ========================================= */}
+
+                <div className="spec-section">
+
+                  <h3>
+                    Specifications
+                  </h3>
+
+                  <div className="product-specs">
+
+                    <Spec
+                      label="Size"
+                      value={displayValue(
+                        selectedProduct.productsize
+                      )}
+                    />
+
+                    <Spec
+                      label="Weight"
+                      value={
+                        selectedProduct.weight !==
+                          null &&
+                        selectedProduct.weight !==
+                          undefined
+                          ? `${selectedProduct.weight} g`
+                          : "-"
+                      }
+                    />
+
+                    <Spec
+                      label="Material"
+                      value={displayValue(
+                        selectedProduct.material
+                      )}
+                    />
+
+                    <Spec
+                      label="Cushioning"
+                      value={displayValue(
+                        selectedProduct.cushioning
+                      )}
+                    />
+
+                    <Spec
+                      label="Support"
+                      value={displayValue(
+                        selectedProduct.supporttype
+                      )}
+                    />
+
+                    <Spec
+                      label="Breathability"
+                      value={displayValue(
+                        selectedProduct.breathability
+                      )}
+                    />
+
+                    <Spec
+                      label="Surface"
+                      value={displayValue(
+                        selectedProduct.surface
+                      )}
+                    />
+
+                    <Spec
+                      label="Terrain"
+                      value={displayValue(
+                        selectedProduct.terrain
+                      )}
+                    />
+
+                    <Spec
+                      label="Foot Strike"
+                      value={displayValue(
+                        selectedProduct.footstrike
+                      )}
+                    />
+
+                    <Spec
+                      label="Energy Return"
+                      value={displayValue(
+                        selectedProduct.energyreturn
+                      )}
+                    />
+
+                    <Spec
+                      label="Heel Drop"
+                      value={
+                        selectedProduct.heeldropmm !==
+                          null &&
+                        selectedProduct.heeldropmm !==
+                          undefined
+                          ? `${selectedProduct.heeldropmm} mm`
+                          : "-"
+                      }
+                    />
+
+                    <Spec
+                      label="Distance"
+                      value={displayValue(
+                        selectedProduct.recommendeddistance
+                      )}
+                    />
+
+                    <Spec
+                      label="Arch Type"
+                      value={displayValue(
+                        selectedProduct.archtype
+                      )}
+                    />
+
+                    <Spec
+                      label="Waterproof"
+                      value={
+                        selectedProduct.waterproof ===
+                          null ||
+                        selectedProduct.waterproof ===
+                          undefined
+                          ? "-"
+                          : selectedProduct.waterproof
+                            ? "Yes"
+                            : "No"
+                      }
+                    />
+
+                    <Spec
+                      label="Release Year"
+                      value={displayValue(
+                        selectedProduct.releaseyear
+                      )}
+                    />
+
+                  </div>
+
+                </div>
+
+                {/* =========================================
+                    DESCRIPTION
+                    ========================================= */}
+
+                {selectedProduct.description && (
+                  <div className="product-description">
+
+                    <h3>
+                      Description
+                    </h3>
+
+                    <p>
+                      {
+                        selectedProduct.description
+                      }
+                    </p>
+
+                  </div>
+                )}
+
+                {/* =========================================
+                    BRANCHES
+                    ========================================= */}
+
+                <div className="branches-section">
+
+                  <h3>
+                    Available at
+                  </h3>
+
+                  <div className="branches-list">
+
+                    {Array.isArray(
+                      selectedProduct.branches
+                    ) &&
+                      selectedProduct.branches
+                        .filter(
+                          (
+                            branch,
+                            index,
+                            array
+                          ) =>
+                            index ===
+                            array.findIndex(
+                              (
+                                item
+                              ) =>
+                                item.branchname ===
+                                  branch.branchname &&
+                                item.city ===
+                                  branch.city
+                            )
+                        )
+                        .map(
+                          (
+                            branch,
+                            index
+                          ) => (
+                            <div
+                              className="branch-item"
+                              key={`${branch.branchname}-${branch.city}-${index}`}
+                            >
+
+                              <div>
+
+                                <strong>
+                                  {
+                                    branch.branchname
+                                  }
+                                </strong>
+
+                                <span>
+                                  {
+                                    branch.city
+                                  }
+                                </span>
+
+                              </div>
+
+                              <span className="branch-quantity">
+
+                                {
+                                  branch.quantity
+                                }{" "}
+                                available
+
+                              </span>
+
+                            </div>
+                          )
+                        )}
+
+                  </div>
+
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
       )}
+
+    </div>
+  );
+}
+
+// =========================================================
+// SPECIFICATION COMPONENT
+// =========================================================
+
+function Spec({
+  label,
+  value,
+}) {
+  return (
+    <div className="spec-item">
+
+      <span className="spec-label">
+        {label}
+      </span>
+
+      <span className="spec-value">
+        {value}
+      </span>
 
     </div>
   );
