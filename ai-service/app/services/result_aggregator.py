@@ -106,6 +106,21 @@ class ResultAggregator:
                     # -----------------------------------------
 
                     "branches": [],
+                    "material": row["productmaterial"],
+                    "surface": row["productsurface"],
+                    "supporttype": row["productsupporttype"],
+                    "cushioning": row["productcushioning"],
+                    "breathability": row["productbreathability"],
+                    "weight": row["productweight"],
+                    "waterproof": row["productwaterproof"],
+                    "description": row["productdescription"],
+                    "recommendeddistance": row["recommendeddistance"],
+                    "archtype": row["archtype"],
+                    "footstrike": row["footstrike"],
+                    "energyreturn": row["energyreturn"],
+                    "releaseyear": row["releaseyear"],
+                    "heeldropmm": row["heeldropmm"],
+                    "terrain": row["terrain"],
                 }
 
             product = products[product_id]
