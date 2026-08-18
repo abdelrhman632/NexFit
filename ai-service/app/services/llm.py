@@ -11,8 +11,7 @@ from app.prompts.recommendation_prompt import (
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 # Good general-purpose model for the application.
-MODEL_NAME = "openai/gpt-5.5"
-
+MODEL_NAME = "openrouter/free"
 
 class LLMService:
 
