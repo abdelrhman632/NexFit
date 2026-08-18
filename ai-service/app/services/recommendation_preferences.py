@@ -1,42 +1,25 @@
 from dataclasses import dataclass
-from typing import Optional
+from typing import Any, Optional
+
+
+@dataclass
+class Preference:
+    desired: Any
+    priority: str
 
 
 @dataclass
 class RecommendationPreferences:
-    # How strongly the user cares about comfort.
-    # Possible values: "high", "medium", "low", or None.
-    comfort: Optional[str] = None
 
-    # Whether long-distance suitability is important.
-    long_distance: Optional[str] = None
-
-    # Whether the user explicitly wants a lightweight shoe.
-    lightweight: Optional[str] = None
-
-    # Whether stability is important to the user.
-    stability: Optional[str] = None
-
-    # Whether cushioning is explicitly requested.
-    cushioning: Optional[str] = None
-
-    # Whether the user prioritizes speed/performance.
-    speed: Optional[str] = None
-
-    # Whether breathability is important.
-    breathability: Optional[str] = None
-
-    # Whether waterproofing is important.
-    waterproof: Optional[str] = None
-
-    # Whether high energy return is important.
-    energy_return: Optional[str] = None
-
-    # Whether the user wants a road-running shoe.
-    road: Optional[str] = None
-
-    # Whether the user wants a trail-running shoe.
-    trail: Optional[str] = None
-
-    # Whether the user specifically wants the newest/latest model.
-    latest_model: Optional[str] = None
+    comfort: Optional[Preference] = None
+    long_distance: Optional[Preference] = None
+    lightweight: Optional[Preference] = None
+    stability: Optional[Preference] = None
+    cushioning: Optional[Preference] = None
+    speed: Optional[Preference] = None
+    breathability: Optional[Preference] = None
+    waterproof: Optional[Preference] = None
+    energy_return: Optional[Preference] = None
+    road: Optional[Preference] = None
+    trail: Optional[Preference] = None
+    latest_model: Optional[Preference] = None

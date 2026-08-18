@@ -1,8 +1,21 @@
+import json
+
+from app.services.llm import LLMService
 from app.services.product_search import ProductSearchService
 from app.services.recommendation_engine import RecommendationEngine
+from app.services.recommendation_preference_parser import (
+    RecommendationPreferenceParser,
+)
 
 
-def print_product(product, rank, score, reasons):
+def print_product(
+    product,
+    rank,
+    score,
+    reasons,
+    breakdown,
+    maximum_possible_score,
+):
 
     print("=" * 60)
     print(f"RECOMMENDATION #{rank}")
@@ -19,11 +32,30 @@ def print_product(product, rank, score, reasons):
     print(f"Usage: {product.get('productusage')}")
     print(f"Size: {product.get('productsize')}")
 
-    print(f"\nRECOMMENDATION SCORE: {score}")
+    print(
+        f"\nRECOMMENDATION SCORE: "
+        f"{score}/100"
+    )
+
+    print(
+        f"MAXIMUM POSSIBLE SCORE: "
+        f"{maximum_possible_score}/100"
+    )
+
+    print("\nSCORE BREAKDOWN:")
+
+    for item in breakdown:
+
+        print(
+            f"  - {item['preference']}: "
+            f"{item['score']}/{item['max_score']} "
+            f"({item['match_percentage']}%)"
+        )
 
     print("\nWHY RECOMMENDED:")
 
     for reason in reasons:
+
         print(f"  - {reason}")
 
     print()
@@ -40,18 +72,54 @@ def main():
     print("=" * 60)
 
     user_text = """
-أنا عايز حذاء جري رجالي.
-مقاس 42.
-ميزانيتي لحد 10000 جنيه.
-عايز حاجة مريحة ومناسبة للجري.
-ويفضل تكون موجودة في فرع مدينة نصر.
+أنا عايز أشتري حذاء جري رجالي من NexFit.
+
+المواصفات الأساسية:
+- مقاس 42 بالضبط.
+- الميزانية القصوى 10000 جنيه.
+- أريد حذاء Running.
+- أريده مناسباً للجري لمسافات طويلة.
+- أفضل أن يكون مريحاً جداً.
+- أريد cushioning مرتفعاً، ويفضل High أو Maximum.
+- أريد breathability عالية.
+- لا يهمني أن يكون الحذاء خفيفاً جداً؛ الراحة أهم بالنسبة لي من الوزن.
+- أريد حذاء مناسباً للجري على Road.
+- لا أحتاج Waterproof.
+- لا يهمني سنة الإصدار أو إذا كان الموديل جديداً.
+- أفضل أن يكون متوفراً في Nasr City Branch.
+
+رتب لي أفضل 5 أحذية من المنتجات المتاحة، وليس مجرد أرخص 5 منتجات.
+
+في التقييم:
+- أعطِ الأولوية للمواصفات التي طلبتها صراحة.
+- لا تعتبر الوزن عاملاً سلبياً إذا كان المستخدم قال إن الوزن غير مهم.
+- لا تعتبر سنة الإصدار عاملاً في التقييم لأنني لم أطلب أحدث موديل.
+- لا تفترض أن Waterproof أفضل إذا لم أطلبه.
+
+أريد Score من 100 لكل منتج، وسبب واضح يشرح لماذا حصل على هذا التقييم.
 """
 
     print(user_text)
 
     # =========================================================
-    # STEP 1 — GEMINI DATA
+    # STEP 1 — GENERATE SEARCH FILTERS
     # =========================================================
+
+    print("=" * 60)
+    print("GENERATING SEARCH FILTERS")
+    print("=" * 60)
+
+    llm = LLMService()
+
+    # NOTE:
+    # For now, your existing database-search pipeline
+    # is still being used here.
+    #
+    # If your project already has a method that generates
+    # the normal Gemini database JSON, use that method here.
+    #
+    # We keep the known working data for this test so that
+    # we can focus on the recommendation engine.
 
     data = {
         "needs_database": True,
@@ -71,14 +139,45 @@ def main():
         ),
     }
 
-    print("=" * 60)
-    print("GEMINI DATA")
-    print("=" * 60)
-
     print(data)
 
     # =========================================================
-    # STEP 2 — PRODUCT SEARCH
+    # STEP 2 — GENERATE RECOMMENDATION PREFERENCES
+    # =========================================================
+
+    print("=" * 60)
+    print("GENERATING RECOMMENDATION PREFERENCES")
+    print("=" * 60)
+
+    preference_response = (
+        llm.generate_recommendation_preferences(
+            user_text
+        )
+    )
+
+    print(preference_response)
+
+    # =========================================================
+    # STEP 3 — PARSE RECOMMENDATION PREFERENCES
+    # =========================================================
+
+    print("=" * 60)
+    print("PARSING RECOMMENDATION PREFERENCES")
+    print("=" * 60)
+
+    preference_data = json.loads(
+        preference_response
+    )
+
+    preferences = (
+        RecommendationPreferenceParser()
+        .parse(preference_data)
+    )
+
+    print(preferences)
+
+    # =========================================================
+    # STEP 4 — PRODUCT SEARCH
     # =========================================================
 
     print("=" * 60)
@@ -90,20 +189,37 @@ def main():
     search_result = search_service.search(data)
 
     # =========================================================
-    # STEP 3 — DISPLAY SEARCH RESULT
+    # STEP 5 — DISPLAY SEARCH RESULT
     # =========================================================
 
     print("=" * 60)
     print("SEARCH RESULT")
     print("=" * 60)
 
-    print(f"Needs database: {search_result.get('needs_database')}")
-    print(f"Fallback used: {search_result.get('fallback_used')}")
-    print(f"Requested branch: {search_result.get('requested_branch')}")
+    print(
+        f"Needs database: "
+        f"{search_result.get('needs_database')}"
+    )
 
-    products = search_result.get("products", [])
+    print(
+        f"Fallback used: "
+        f"{search_result.get('fallback_used')}"
+    )
 
-    print(f"\nFound {len(products)} candidate product(s).")
+    print(
+        f"Requested branch: "
+        f"{search_result.get('requested_branch')}"
+    )
+
+    products = search_result.get(
+        "products",
+        [],
+    )
+
+    print(
+        f"\nFound {len(products)} "
+        f"candidate product(s)."
+    )
 
     for product in products:
 
@@ -114,7 +230,7 @@ def main():
         )
 
     # =========================================================
-    # STEP 4 — RECOMMENDATION ENGINE
+    # STEP 6 — RECOMMENDATION ENGINE
     # =========================================================
 
     print("=" * 60)
@@ -123,21 +239,16 @@ def main():
 
     engine = RecommendationEngine()
 
-    # The ProductSearchService has already converted the
-    # Gemini filters into SearchFilters internally.
-    #
-    # For now we use the same original filter data for
-    # the recommendation engine.
-
     filters = search_result.get("filters")
 
     recommendations = engine.recommend(
         products=products,
         filters=filters,
+        preferences=preferences,
     )
 
     # =========================================================
-    # STEP 5 — FINAL RECOMMENDATIONS
+    # STEP 7 — FINAL RECOMMENDATIONS
     # =========================================================
 
     print("=" * 60)
@@ -145,7 +256,8 @@ def main():
     print("=" * 60)
 
     print(
-        f"Found {len(recommendations)} recommendation(s)."
+        f"Found {len(recommendations)} "
+        f"recommendation(s)."
     )
 
     for rank, recommendation in enumerate(
@@ -154,11 +266,15 @@ def main():
     ):
 
         print_product(
-            product=recommendation["product"],
-            rank=rank,
-            score=recommendation["score"],
-            reasons=recommendation["reasons"],
-        )
+    product=recommendation["product"],
+    rank=rank,
+    score=recommendation["score"],
+    reasons=recommendation["reasons"],
+    breakdown=recommendation["breakdown"],
+    maximum_possible_score=recommendation[
+        "maximum_possible_score"
+    ],
+)
 
 
 if __name__ == "__main__":

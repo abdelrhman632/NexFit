@@ -1,169 +1,264 @@
 from typing import Any
 
-from app.prompts.recommendation_prompt import RECOMMENDATION_SYSTEM_PROMPT
+from app.services.recommendation_scoring import (
+    PREFERENCE_WEIGHTS,
+    score_preference,
+)
 
 
 class RecommendationEngine:
 
     MAX_RECOMMENDATIONS = 5
 
+    SUPPORTED_PREFERENCES = [
+        "comfort",
+        "long_distance",
+        "lightweight",
+        "stability",
+        "cushioning",
+        "speed",
+        "breathability",
+        "waterproof",
+        "energy_return",
+        "road",
+        "trail",
+        "latest_model",
+    ]
+
+    # ========================================================
+    # ACTIVE PREFERENCES
+    # ========================================================
+
+    @staticmethod
+    def get_active_preferences(
+        preferences,
+    ) -> set[str]:
+
+        active = set()
+
+        for name in (
+            RecommendationEngine.SUPPORTED_PREFERENCES
+        ):
+
+            value = getattr(
+                preferences,
+                name,
+                None,
+            )
+
+            if value is not None:
+
+                active.add(name)
+
+        return active
+
+    # ========================================================
+    # RECOMMEND
+    # ========================================================
+
     def recommend(
         self,
         products: list[dict[str, Any]],
         filters: Any,
+        preferences: Any,
     ) -> list[dict[str, Any]]:
-        """
-        Rank eligible products according to the user's requirements.
-
-        ProductSearchService:
-            Finds eligible candidates.
-
-        RecommendationEngine:
-            Scores and ranks those candidates.
-
-        This class does not query the database.
-        """
 
         if not products:
+
             return []
+
+        # ====================================================
+        # Find what the USER ACTUALLY ASKED FOR
+        # ====================================================
+
+        active_preferences = (
+            self.get_active_preferences(
+                preferences
+            )
+        )
+
+        if not active_preferences:
+
+            # No recommendation preferences were specified.
+            #
+            # In this case, do not invent a preference.
+            # Return products with neutral score.
+
+            return [
+                {
+                    "product": product,
+                    "score": 0.0,
+                    "reasons": [
+                        "No specific recommendation "
+                        "preferences were provided."
+                    ],
+                    "breakdown": [],
+                }
+
+                for product in products[
+                    :self.MAX_RECOMMENDATIONS
+                ]
+            ]
+
+        # ====================================================
+        # MAXIMUM POSSIBLE SCORE
+        # ====================================================
+        #
+        # ONLY preferences explicitly requested by the user
+        # contribute to the denominator.
+        #
+        # Example:
+        #
+        # comfort + road + energy_return
+        #
+        # Only those three weights are considered.
+        #
+        # A perfect product therefore gets:
+        #
+        # 100 / 100
+        #
+        # ====================================================
+
+        maximum_possible_score = sum(
+            PREFERENCE_WEIGHTS.get(
+                preference_name,
+                0,
+            )
+
+            for preference_name
+            in active_preferences
+        )
+
+        # ====================================================
+        # SCORE PRODUCTS
+        # ====================================================
 
         scored_products = []
 
         for product in products:
 
-            score = 0
+            raw_total = 0.0
+
+            breakdown = []
+
             reasons = []
 
-            # =====================================================
-            # HARD / EXPLICIT FILTER MATCHES
-            # =====================================================
+            # ------------------------------------------------
+            # Score every preference the user specified
+            # ------------------------------------------------
 
-            requested_gender = getattr(filters, "gender", None)
-
-            if requested_gender:
-                if product.get("productgender") in requested_gender:
-                    score += 20
-                    reasons.append(
-                        "Matches the requested gender."
-                    )
-
-            requested_category = getattr(filters, "category", None)
-
-            if requested_category:
-                if product.get("productcategory") == requested_category:
-                    score += 20
-                    reasons.append(
-                        "Matches the requested running category."
-                    )
-
-            requested_usage = getattr(filters, "usage", None)
-
-            if requested_usage:
-                if product.get("productusage") == requested_usage:
-                    score += 25
-                    reasons.append(
-                        "Matches the requested usage."
-                    )
-
-            requested_size = getattr(filters, "size", None)
-
-            if requested_size is not None:
-                if product.get("productsize") == requested_size:
-                    score += 20
-                    reasons.append(
-                        "Available in the requested size."
-                    )
-
-            max_price = getattr(filters, "max_price", None)
-
-            if max_price is not None:
-
-                price = product.get("productprice")
+            for preference_name in (
+                self.SUPPORTED_PREFERENCES
+            ):
 
                 if (
-                    price is not None
-                    and float(price) <= float(max_price)
+                    preference_name
+                    not in active_preferences
                 ):
-                    score += 10
-                    reasons.append(
-                        "Within the requested budget."
-                    )
 
-            # =====================================================
-            # AVAILABILITY
-            # =====================================================
+                    continue
 
-            branches = product.get("branches", [])
-
-            available = any(
-                branch.get("quantity", 0) > 0
-                for branch in branches
-            )
-
-            if available:
-                score += 5
-                reasons.append(
-                    "Currently available in stock."
+                preference = getattr(
+                    preferences,
+                    preference_name,
+                    None,
                 )
 
-            # =====================================================
-            # PRODUCT SUITABILITY
-            # =====================================================
-
-            # These attributes are currently used only when they
-            # directly support an explicitly requested usage.
-
-            if requested_usage == "Long Distance":
-
-                recommended_distance = (
-                    product.get("recommendeddistance")
+                result = score_preference(
+                    product=product,
+                    preference_name=preference_name,
+                    preference=preference,
+                    active_preferences=active_preferences,
                 )
 
-                if recommended_distance in (
-                    "Long",
-                    "Ultra",
-                ):
-                    score += 10
-                    reasons.append(
-                        "Designed for longer-distance running."
-                    )
+                score = result["score"]
+                max_score = result["max_score"]
+                ratio = result["ratio"]
 
-                cushioning = product.get("cushioning")
+                raw_total += score
 
-                if cushioning in (
-                    "High",
-                    "Maximum",
-                ):
-                    score += 10
-                    reasons.append(
-                        "Provides strong cushioning for comfort."
-                    )
+                # --------------------------------------------
+                # Breakdown
+                # --------------------------------------------
 
-            # =====================================================
-            # SAVE RESULT
-            # =====================================================
+                breakdown.append(
+                    {
+                        "preference": preference_name,
+                        "score": round(
+                            score,
+                            2,
+                        ),
+                        "max_score": round(
+                            max_score,
+                            2,
+                        ),
+                        "match_percentage": round(
+                            ratio * 100,
+                            1,
+                        ),
+                    }
+                )
+
+                # --------------------------------------------
+                # Reasons
+                # --------------------------------------------
+
+                reasons.extend(
+                    result["reasons"]
+                )
+
+            # ------------------------------------------------
+            # Normalize to 100
+            # ------------------------------------------------
+
+            if maximum_possible_score > 0:
+
+                final_score = (
+                    raw_total
+                    / maximum_possible_score
+                ) * 100.0
+
+            else:
+
+                final_score = 0.0
+
+            # ------------------------------------------------
+            # Save
+            # ------------------------------------------------
 
             scored_products.append(
                 {
                     "product": product,
-                    "score": score,
+                    "score": round(
+                        final_score,
+                        2,
+                    ),
+                    "raw_score": round(
+                        raw_total,
+                        2,
+                    ),
+                    "maximum_possible_score": round(
+                        maximum_possible_score,
+                        2,
+                    ),
                     "reasons": reasons,
+                    "breakdown": breakdown,
                 }
             )
 
-        # =========================================================
-        # SORT BY SCORE
-        # =========================================================
+        # ====================================================
+        # SORT
+        # ====================================================
 
         scored_products.sort(
             key=lambda item: item["score"],
             reverse=True,
         )
 
-        # =========================================================
+        # ====================================================
         # TOP 5
-        # =========================================================
+        # ====================================================
 
         return scored_products[
-            : self.MAX_RECOMMENDATIONS
+            :self.MAX_RECOMMENDATIONS
         ]

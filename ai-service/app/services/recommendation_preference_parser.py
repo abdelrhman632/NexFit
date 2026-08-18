@@ -1,60 +1,115 @@
-from app.services.recommendation_preferences import (
-    RecommendationPreferences,
-)
+from dataclasses import dataclass
+from typing import Any, Optional
+
+
+@dataclass
+class Preference:
+    desired: Any
+    priority: str
+
+
+@dataclass
+class RecommendationPreferences:
+
+    comfort: Optional[Preference] = None
+    long_distance: Optional[Preference] = None
+    lightweight: Optional[Preference] = None
+    stability: Optional[Preference] = None
+    cushioning: Optional[Preference] = None
+    speed: Optional[Preference] = None
+    breathability: Optional[Preference] = None
+    waterproof: Optional[Preference] = None
+    energy_return: Optional[Preference] = None
+    road: Optional[Preference] = None
+    trail: Optional[Preference] = None
+    latest_model: Optional[Preference] = None
 
 
 class RecommendationPreferenceParser:
 
-    # These are the only priority values that Gemini is allowed
-    # to return.
-    ALLOWED_PRIORITIES = {
-        "high",
-        "medium",
-        "low",
-    }
+    @staticmethod
+    def _parse_preference(value):
 
-    # These are the only recommendation attributes that we support.
-    ALLOWED_FIELDS = {
-        "comfort",
-        "long_distance",
-        "lightweight",
-        "stability",
-        "cushioning",
-        "speed",
-        "breathability",
-        "waterproof",
-        "energy_return",
-        "road",
-        "trail",
-        "latest_model",
-    }
+        if value is None:
+            return None
 
-    def parse(self, data: dict) -> RecommendationPreferences:
+        if not isinstance(value, dict):
+            return None
 
-        # Get the "preferences" object returned by Gemini.
-        preferences = data.get("preferences", {})
+        desired = value.get("desired")
+        priority = value.get("priority")
 
-        # If Gemini somehow returns something other than a dictionary,
-        # safely fall back to an empty preference set.
-        if not isinstance(preferences, dict):
-            preferences = {}
+        if desired is None or priority is None:
+            return None
 
-        cleaned = {}
+        priority = str(priority).lower()
 
-        # Go through our approved attributes.
-        for field in self.ALLOWED_FIELDS:
+        if priority not in {
+            "high",
+            "medium",
+            "low",
+        }:
+            return None
 
-            # Get Gemini's value for this attribute.
-            value = preferences.get(field)
+        return Preference(
+            desired=desired,
+            priority=priority,
+        )
 
-            # If Gemini returns an invalid value, discard it.
-            if value not in self.ALLOWED_PRIORITIES:
-                value = None
+    def parse(self, data):
 
-            # Store the validated value.
-            cleaned[field] = value
+        preferences_data = data.get(
+            "preferences",
+            {},
+        )
 
-        # Convert the validated dictionary into our typed object.
         return RecommendationPreferences(
-            **cleaned
+
+            comfort=self._parse_preference(
+                preferences_data.get("comfort")
+            ),
+
+            long_distance=self._parse_preference(
+                preferences_data.get("long_distance")
+            ),
+
+            lightweight=self._parse_preference(
+                preferences_data.get("lightweight")
+            ),
+
+            stability=self._parse_preference(
+                preferences_data.get("stability")
+            ),
+
+            cushioning=self._parse_preference(
+                preferences_data.get("cushioning")
+            ),
+
+            speed=self._parse_preference(
+                preferences_data.get("speed")
+            ),
+
+            breathability=self._parse_preference(
+                preferences_data.get("breathability")
+            ),
+
+            waterproof=self._parse_preference(
+                preferences_data.get("waterproof")
+            ),
+
+            energy_return=self._parse_preference(
+                preferences_data.get("energy_return")
+            ),
+
+            road=self._parse_preference(
+                preferences_data.get("road")
+            ),
+
+            trail=self._parse_preference(
+                preferences_data.get("trail")
+            ),
+
+            latest_model=self._parse_preference(
+                preferences_data.get("latest_model")
+            ),
         )
