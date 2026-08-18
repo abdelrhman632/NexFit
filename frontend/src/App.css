@@ -154,10 +154,6 @@
 
   font-size: clamp(48px, 7vw, 84px);
 
-  /*
-   * Increased from 0.98.
-   * This prevents Inter's glyphs from being clipped.
-   */
   line-height: 1.08;
 
   letter-spacing: -4px;
@@ -172,9 +168,6 @@
 .hero h2 span {
   display: block;
 
-  /*
-   * Give the second line its own vertical space.
-   */
   line-height: 1.15;
 
   padding-bottom: 8px;
@@ -208,20 +201,62 @@
 }
 
 /* =========================================================
-   MICROPHONE
+   MICROPHONE + ORB
    ========================================================= */
+
+.orb-container {
+  position: relative;
+
+  width: 155px;
+  height: 155px;
+
+  margin-top: 35px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nexfit-orb {
+  position: absolute;
+
+  inset: 0;
+
+  width: 100%;
+  height: 100%;
+
+  object-fit: contain;
+
+  pointer-events: none;
+
+  z-index: 1;
+
+  filter:
+    drop-shadow(0 0 20px rgba(120, 90, 255, 0.25));
+}
+
+.orb-container.active .nexfit-orb {
+  filter:
+    drop-shadow(0 0 30px rgba(130, 100, 255, 0.55));
+}
 
 .mic-button {
   position: relative;
+
+  z-index: 2;
 
   display: flex;
   align-items: center;
   justify-content: center;
 
-  width: 92px;
-  height: 92px;
+  flex: 0 0 auto;
 
-  margin-top: 42px;
+  width: 68px;
+  height: 68px;
+
+  margin: 0;
+
+  padding: 0;
 
   border: 1px solid
     rgba(174, 153, 255, 0.35);
@@ -252,7 +287,7 @@
 }
 
 .mic-button:hover {
-  transform: translateY(-3px) scale(1.03);
+  transform: scale(1.03);
 
   border-color:
     rgba(185, 168, 255, 0.65);
@@ -274,7 +309,7 @@
 .mic-glow {
   position: absolute;
 
-  inset: -10px;
+  inset: -8px;
 
   border-radius: 50%;
 
@@ -292,15 +327,15 @@
   align-items: center;
   justify-content: center;
 
-  width: 58px;
-  height: 58px;
+  width: 48px;
+  height: 48px;
 
   border-radius: 50%;
 
   background:
     rgba(255, 255, 255, 0.08);
 
-  font-size: 29px;
+  font-size: 24px;
 }
 
 .microphone-icon {
@@ -308,7 +343,7 @@
 }
 
 .stop-icon {
-  font-size: 21px;
+  font-size: 19px;
   color: #ffffff;
 }
 
@@ -321,7 +356,7 @@
 
   70% {
     box-shadow:
-      0 0 0 22px
+      0 0 0 18px
         rgba(144, 117, 255, 0);
   }
 
@@ -1261,45 +1296,38 @@
     padding: 20px;
   }
 
-.brand h1 {
-  margin: 0;
+  .brand h1 {
+    margin: 0;
 
-  font-family:
-    "Inter",
-    Arial,
-    Helvetica,
-    sans-serif;
+    font-family:
+      "Inter",
+      Arial,
+      Helvetica,
+      sans-serif;
 
-  font-size: 42px;
-  font-weight: 800;
+    font-size: 42px;
+    font-weight: 800;
 
-  /*
-   * Give the font enough vertical space.
-   */
-  line-height: 1.2;
+    line-height: 1.2;
 
-  letter-spacing: -1.5px;
+    letter-spacing: -1.5px;
 
-  /*
-   * Extra vertical room prevents the bottom
-   * of the glyphs from being clipped.
-   */
-  padding: 4px 0 7px;
+    padding: 4px 0 7px;
 
-  background:
-    linear-gradient(
-      90deg,
-      #ffffff,
-      #b9b6ff
-    );
+    background:
+      linear-gradient(
+        90deg,
+        #ffffff,
+        #b9b6ff
+      );
 
-  -webkit-background-clip: text;
-  background-clip: text;
+    -webkit-background-clip: text;
+    background-clip: text;
 
-  color: transparent;
+    color: transparent;
 
-  overflow: visible;
-}
+    overflow: visible;
+  }
 
   .main {
     width: min(
@@ -1311,37 +1339,30 @@
   }
 
   .hero h2 {
-  margin: 28px 0 0;
+    margin: 28px 0 0;
 
-  max-width: 950px;
+    max-width: 950px;
 
-  font-family:
-    "Inter",
-    Arial,
-    Helvetica,
-    sans-serif;
+    font-family:
+      "Inter",
+      Arial,
+      Helvetica,
+      sans-serif;
 
-  font-size: clamp(48px, 7vw, 84px);
+    font-size: clamp(48px, 7vw, 84px);
 
-  font-weight: 800;
+    font-weight: 800;
 
-  /*
-   * Important:
-   * More vertical line space so y/g descend properly.
-   */
-  line-height: 1.15;
+    line-height: 1.15;
 
-  letter-spacing: -4px;
+    letter-spacing: -4px;
 
-  color: #ffffff;
+    color: #ffffff;
 
-  /*
-   * Extra room around the glyphs.
-   */
-  padding: 6px 10px 14px;
+    padding: 6px 10px 14px;
 
-  overflow: visible;
-}
+    overflow: visible;
+  }
 
   .hero-description {
     font-size: 15px;
