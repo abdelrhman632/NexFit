@@ -100,3 +100,4 @@ Thumbs.db
 __pycache__/
 node_modules/
 dist/
+nexfit.dump
