@@ -1,3 +1,5 @@
+import os
+
 from google import genai
 
 from app.prompts.system_prompt import NEXFIT_SYSTEM_PROMPT
@@ -6,16 +8,23 @@ from app.prompts.recommendation_prompt import (
     RECOMMENDATION_SYSTEM_PROMPT,
 )
 
+
 MODEL_NAME = "gemini-3.6-flash"
 
 
 class LLMService:
 
     def __init__(self):
+
+        api_key = os.getenv("GEMINI_API_KEY")
+
+        if not api_key:
+            raise RuntimeError(
+                "GEMINI_API_KEY environment variable is not configured."
+            )
+
         self.client = genai.Client(
-            enterprise=True,
-            project="project-8e81b4ea-c0d9-4fcf-a60",
-            location="global",
+            api_key=api_key,
         )
 
     # =========================================================
