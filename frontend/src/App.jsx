@@ -17,6 +17,7 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const recognitionRef = useRef(null);
+  const orbVideoRef = useRef(null);
   const finalTranscriptRef = useRef("");
   const listeningRef = useRef(false);
   const manuallyStoppedRef = useRef(false);
@@ -90,6 +91,17 @@ function App() {
       recognitionRef.current = null;
     };
   }, []);
+
+  useEffect(() => {
+    const video = orbVideoRef.current;
+    if (!video) return;
+
+    if (isListening || loading) {
+      video.play().catch(() => {});
+    } else {
+      video.pause();
+    }
+  }, [isListening, loading]);
 
   const toggleListening = () => {
     const recognition = recognitionRef.current;
@@ -187,14 +199,25 @@ function App() {
           <h2>Tell us what<span>you're looking for.</span></h2>
           <p className="hero-description">Tell NexFit what you need. We'll search the available products for you.</p>
 
-          <button
-            className={`mic-button ${isListening ? "listening" : ""}`}
-            onClick={toggleListening}
-            aria-label={isListening ? "Stop listening" : "Start voice search"}
-          >
-            <div className="mic-glow" />
-            <div className="mic-icon">{isListening ? <span className="stop-icon">■</span> : <span className="microphone-icon">🎙</span>}</div>
-          </button>
+          <div className={`orb-container ${isListening || loading ? "active" : ""}`}>
+            <video
+              ref={orbVideoRef}
+              className="nexfit-orb"
+              src="/nexfit-orb.webm"
+              muted
+              playsInline
+              preload="auto"
+            />
+
+            <button
+              className={`mic-button ${isListening ? "listening" : ""}`}
+              onClick={toggleListening}
+              aria-label={isListening ? "Stop listening" : "Start voice search"}
+            >
+              <div className="mic-glow" />
+              <div className="mic-icon">{isListening ? <span className="stop-icon">■</span> : <span className="microphone-icon">🎙</span>}</div>
+            </button>
+          </div>
 
           <p className={`mic-status ${isListening ? "active" : ""}`}>
             {isListening ? "Listening... Take your time. Press the microphone when you're finished." : "Tap the microphone and tell us what you need"}
